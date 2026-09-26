@@ -1,0 +1,17 @@
+{
+  "display_name": "🍐 梨梨工作台",
+  "loading_order": 200,
+  "requires": [],
+  "optional": [],
+  "js": "index.js",
+  "author": "梨梨",
+  "version": "3.6.1",
+  "homePage": "https://github.com/pear-winter/li-tool",
+  "minimum_client_version": "1.19.0",
+  "auto_update": false,
+  "hooks": {
+    "enable": "onEnable",
+    "disable": "onDisable",
+    "delete": "onDisable"
+  }
+}
