@@ -1,14 +1,13 @@
 {
   "name": "lili-workbench-extension",
   "private": true,
-  "version": "3.6.1",
+  "version": "3.8.7",
   "type": "module",
   "scripts": {
     "check": "node --check index.js && node --check workbench.js",
     "test": "node tests/browser.cjs"
   },
   "devDependencies": {
-    "playwright": "1.63.0",
-    "@sparticuz/chromium": "153.0.0"
+    "playwright": "1.63.0"
   }
 }

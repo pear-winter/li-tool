@@ -1,5 +1,5 @@
 /**
- * 🍐 梨梨工作台 v3.6 无书摘版 by梨梨
+ * 🍐 梨梨工作台 v3.8.7
  * 合并：预设工作台 v1.1 / 世界书工作台 v2.7 / 聊天工作台 v3.4.0（聊天档案馆 + 回复分支）
  * 适配目标：SillyTavern 1.19.0 / 酒馆助手 4.9.3
  * 一个入口、一个面板、顶部四页切换；入口、悬浮图与美化统一共享。
@@ -179,7 +179,7 @@ export function startWorkbench() {
       }
     }
   }
-  cfg.lastTab = ['preset', 'api', 'sttheme', 'worldbook', 'archive', 'history', 'tools', 'beauty'].includes(cfg.lastTab) ? cfg.lastTab : 'preset';
+  cfg.lastTab = ['preset', 'api', 'sttheme', 'worldbook', 'archive', 'history', 'tools', 'music', 'beauty'].includes(cfg.lastTab) ? cfg.lastTab : 'preset';
   cfg.tabNames = object(cfg.tabNames);
   cfg.tabOrder = Array.isArray(cfg.tabOrder) ? cfg.tabOrder.filter(n => typeof n === 'string') : [];
   cfg.transApi = object(cfg.transApi);
@@ -189,7 +189,7 @@ export function startWorkbench() {
   cfg.themeFavs = Array.isArray(cfg.themeFavs) ? cfg.themeFavs.filter(n => typeof n === 'string') : [];
   cfg.themeUsed = object(cfg.themeUsed);
   cfg.tabIcons = Object.fromEntries(Object.entries(object(cfg.tabIcons))
-    .filter(([k, v]) => ['preset', 'api', 'sttheme', 'worldbook', 'archive', 'history', 'tools', 'beauty'].includes(k) && typeof v === 'string' && /^https?:\/\//i.test(v)));
+    .filter(([k, v]) => ['preset', 'api', 'sttheme', 'worldbook', 'archive', 'history', 'tools', 'music', 'beauty'].includes(k) && typeof v === 'string' && /^https?:\/\//i.test(v)));
 
   const oldPos = read('ca-fab-pos', null);
   if (cfg.x === null && oldPos) {
@@ -286,6 +286,20 @@ export function startWorkbench() {
 
   function notice(message) {
     void dialog(message);
+  }
+
+  // v3.8：屏幕最上方的小提示，自己消失，不用点
+  function topTip(message, ms = 2800) {
+    const el = node('div', 'cw-top-tip', message);
+    el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite');
+    el.style.cssText = 'position:fixed;inset:auto;top:calc(env(safe-area-inset-top,0px) + 14px);left:50%;right:auto;bottom:auto;margin:0;transform:translate(-50%,-10px);max-width:min(88vw,420px);width:max-content;height:auto;padding:9px 18px;border:1px solid rgba(255,255,255,.35);border-radius:999px;background:rgba(28,28,30,.86);color:#fff;font:13px/1.5 var(--mainFontFamily,sans-serif);text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.25);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:2147483647;overflow:visible';
+    let pop = false;
+    try { el.popover = 'manual'; DOC.body.append(el); el.showPopover(); pop = true; } catch { if (!el.isConnected) DOC.body.append(el); }
+    W.requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translate(-50%,0)'; });
+    W.setTimeout(() => {
+      el.style.opacity = '0'; el.style.transform = 'translate(-50%,-10px)';
+      W.setTimeout(() => { if (pop) { try { el.hidePopover(); } catch {} } el.remove(); }, 300);
+    }, ms);
   }
 
   const ask = message => dialog(message, 'confirm');
@@ -1395,7 +1409,7 @@ export function startWorkbench() {
 
   const THEME_SELECTOR = ':is(#cw-hub, .cw-dialog, .pw-dialog, .wb-dialog)';
   const OLD_THEME_SELECTOR = ':is(#cw-home, #ca-panel, #sb-panel, .cw-dialog)';
-  const CW_SCOPE = ':is(#cw-tabs, #cw-settings-page, #ca-panel, #sb-panel, #api-panel, #st-panel, #tl-panel, .cw-dialog)';
+  const CW_SCOPE = ':is(#cw-tabs, #cw-settings-page, #ca-panel, #sb-panel, #api-panel, #st-panel, #tl-panel, #lm-panel, #wp-panel, .cw-dialog)';
   const THEME_TEMPLATE = `/* ♡ 四页统一美化：预设 / 世界书 / 聊天档案馆 / 回复分支 / 设置
    下面的颜色变量对全部页面和弹窗生效。
    单独调整某一页时可用：#pw-panel（预设）、#wb-panel（世界书）、
@@ -1974,29 +1988,6 @@ ${CW_SCOPE} .cw-css-editor{font:calc(13px * var(--cw-fs, 1))/1.65 ui-monospace,C
 }
 .rd-selbar::-webkit-scrollbar{display:none}
 .rd-selbar-sep{flex:0 0 1px;align-self:stretch;background:var(--cw-border);margin:0 2px}
-#cw-hub-body>#be-panel{
-  position:relative!important;inset:auto!important;top:auto!important;right:auto!important;left:auto!important;
-  width:100%!important;max-width:none!important;max-height:none!important;height:auto!important;
-  flex:1 1 auto;min-height:0;margin:0!important;z-index:auto!important;
-  border:0!important;border-radius:0!important;box-shadow:none!important;
-  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
-  font-family:inherit!important;
-  --be-panel-bg:transparent!important;
-  --be-panel-fg:var(--cw-text)!important;
-  --be-panel-sub:var(--cw-text-dim)!important;
-  --be-panel-empty-fg:var(--cw-text-dim)!important;
-  --be-panel-tab-fg:var(--cw-text)!important;
-  --be-panel-row-bg:var(--cw-surface)!important;
-  --be-panel-row-bg-hover:var(--cw-accent-soft)!important;
-  --be-panel-divider:var(--cw-border)!important;
-  --be-panel-border:var(--cw-border)!important;
-  --be-panel-input-bg:var(--cw-surface)!important;
-  --be-panel-input-border:var(--cw-border)!important;
-  --be-panel-placeholder:var(--cw-text-dim)!important;
-}
-#cw-hub-body>#be-panel #be-p-close{display:none!important}
-#cw-hub-body>#be-panel :is(button,.be-btn,input,select,textarea){border-radius:var(--cw-radius)!important;box-shadow:none!important}
-#cw-hub-body>#be-panel :is(.be-note-card,.be-char-card){border:var(--cw-line)!important;border-radius:var(--cw-radius)!important;box-shadow:none!important}
 #ca-panel .rd-selbar .cw-button{flex:0 0 auto;white-space:nowrap;font-size:calc(12px * var(--cw-fs, 1));min-height:32px;padding:5px 10px}
 .rd-marklist{display:grid;gap:8px}
 .rd-mark-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:var(--cw-line);padding:8px 10px}
@@ -2217,6 +2208,13 @@ details[open]>.ca-msg-hd::after,details[open]>.sb-msg-hd::after{content:'▼'}
 .cw-dialog .cw-sheet-text{flex:1;width:100%;height:100%;min-height:0;resize:none;box-sizing:border-box;font:calc(13px * var(--cw-fs, 1))/1.7 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap}
 .cw-dialog .cw-sheet-foot{padding:10px 18px;padding-bottom:max(10px,env(safe-area-inset-bottom));border-top:var(--cw-line);margin:0;align-items:center}
 .cw-sheet-foot .cw-sheet-status{margin-right:auto}
+.ne-import-dialog .cw-sheet-foot{flex:0 0 auto!important;display:flex!important;flex-wrap:wrap;gap:8px}
+.ne-import-dialog .cw-sheet-body{min-height:0;overflow-y:auto;flex:1 1 auto}
+.ne-import-dialog .ne-playlist-choice{display:flex!important;width:100%!important;min-height:48px;height:auto!important;gap:12px;align-items:center;text-align:left;white-space:normal;margin:8px 0;padding:12px;box-sizing:border-box}
+.ne-import-dialog .ne-choice-mark{flex:0 0 5em;font-weight:bold}
+.ne-import-dialog .ne-choice-name{min-width:0;overflow-wrap:anywhere}
+.ne-import-dialog .ne-playlist-choice[aria-pressed=true]{border:2px solid var(--cw-accent,currentColor);background:var(--cw-bg2);box-shadow:inset 4px 0 0 var(--cw-accent,currentColor)}
+
 .cw-list-item{border:var(--cw-line);border-radius:var(--cw-radius);background:var(--cw-surface);margin-bottom:10px}
 .cw-list-item.is-off .cw-list-name{opacity:.62}
 .cw-list-head{display:flex;align-items:center;gap:8px;padding:8px 10px}
@@ -2688,6 +2686,7 @@ ${THEME_SELECTOR}{
     ['archive', '☕', '聊天档案馆'],
     ['history', '🌿', '回复分支'],
     ['tools', '🧰', '工具'],
+    ['music', '🎵', '音乐'],
     ['beauty', '🎀', '控制台']
   ];
   const TAB_NAMES = TABS.map(t => t[0]);
@@ -2710,7 +2709,8 @@ ${THEME_SELECTOR}{
     worldbook: 'https://s1.oururl.cn/autoupload/cgoqf/20260922/lDPE/241X245/%E6%B2%90%E6%9E%9C%E7%B4%A0%E6%9D%90_%2864%29.png',
     archive: 'https://s1.oururl.cn/autoupload/cgoqf/20260922/RdtU/331X326/%E6%B2%90%E6%9E%9C%E7%B4%A0%E6%9D%90_%28154%29.png',
     history: 'https://s1.oururl.cn/autoupload/cgoqf/20260922/rQaV/242X321/%E6%B2%90%E6%9E%9C%E7%B4%A0%E6%9D%90_%28139%29.png',
-    beauty: 'https://s1.oururl.cn/autoupload/cgoqf/20260922/GSv2/322X212/%E6%B2%90%E6%9E%9C%E7%B4%A0%E6%9D%90_%2842%29.png'
+    beauty: 'https://s1.oururl.cn/autoupload/cgoqf/20260922/GSv2/322X212/%E6%B2%90%E6%9E%9C%E7%B4%A0%E6%9D%90_%2842%29.png',
+    music: 'https://s1.oururl.cn/autoupload/cgoqf/20260928/vZY8/363X332/%E6%B2%90%E6%9E%9C%E7%B4%A0%E6%9D%90_%2831%29.png',
   };
 
   function tabIconUrl(name) {
@@ -2808,7 +2808,6 @@ ${THEME_SELECTOR}{
     const foldWatch = new W.MutationObserver(() => enhanceBars(foldWatch.hub));
     foldWatch.hub = hub;
     foldWatch.observe(hub, { childList: true, subtree: true });
-    cleanups.push(() => foldWatch.disconnect());
     hub.addEventListener('keydown', event => {
       if (event.key !== 'Escape' || event.defaultPrevented) return;
       event.stopPropagation();
@@ -4775,26 +4774,8 @@ ${THEME_SELECTOR}{
           W.setTimeout(() => { copyBtn.textContent = '复制'; }, 1200);
         }
       });
-      const be = null; // 无书摘版
-      const beCall = fn => () => {
-        if (!be) { notice('书摘还没启动好，稍等一下再试。'); return; }
-        const target = currentChar;
-        be.setContext({
-          charName: target?.name || '', charKey: target?.avatar || 'unknown', chatId: reader?.file || '',
-          charAvatar: target?.avatar ? '/thumbnail?type=avatar&file=' + encodeURIComponent(target.avatar) : ''
-        });
-        fn();
-        selection.removeAllRanges();
-        bar.remove();
-      };
       bar.append(copyBtn, add('下划线', 'underline'), add('加粗', 'bold'), add('荧光笔', 'mark'), add('收藏', 'fav'));
       appendRemoveButtons(bar, floor, marksUnder(anchor, range), () => selection.removeAllRanges());
-      if (be) {
-        bar.append(node('span', 'rd-selbar-sep'),
-          button('书摘划线', beCall(() => { be.highlight(text, { msgId: floor, chatId: reader.file }); addMark({ kind: 'underline', text, floor, at }); })),
-          button('想法', beCall(() => be.thought(text, { msgId: floor, chatId: reader.file }))),
-          button('做书摘卡片', beCall(() => be.excerpt(text)), 'cw-primary'));
-      }
       bar.append(button('取消', () => { selection.removeAllRanges(); bar.remove(); }));
       box.append(bar);
     }
@@ -6385,7 +6366,7 @@ ${THEME_SELECTOR}{
       charBulk.selected.clear();
       galleryQuery = '';
       p.append(toolbar, body, gallery, readerBox,
-        node('div', 'cw-footer', '☕ 聊天档案馆 · 梨梨工作台 v3.6 无书摘版'));
+        node('div', 'cw-footer', '☕ 聊天档案馆 · 梨梨工作台 v3.8.7'));
       container.append(p);
       syncThemeUi();
       renderChats();
@@ -7308,7 +7289,7 @@ ${THEME_SELECTOR}{
       const footer = node('div', 'cw-footer');
       const status = node('span');
       status.id = 'sb-status';
-      footer.append(status, DOC.createTextNode(' · 🌿 回复分支 · 梨梨工作台 v3.6 无书摘版'));
+      footer.append(status, DOC.createTextNode(' · 🌿 回复分支 · 梨梨工作台 v3.8.7'));
 
       p.append(toolbar, editBar, box, footer);
       container.append(p);
@@ -7690,13 +7671,18 @@ ${THEME_SELECTOR}{
     const data = manager.getPresetList();
     if (!Object.prototype.hasOwnProperty.call(data.preset_names, name)) throw Error('保存期间预设列表改变，请刷新酒馆确认保存结果。');
     data.presets[data.preset_names[name]] = clone(next);
+    // 正在使用的就是这份预设：保存后立刻让酒馆重新加载，改动马上生效
+    if (manager.getSelectedPresetName() !== name) return false;
+    try { await activatePreset(name); return true; }
+    catch (error) { notice('已保存，但同步到酒馆失败：' + error.message + '\n可以点「切换使用」再试一次。'); return false; }
   }
+  let lastSynced = false;
   async function saveWork() {
     if (busy || !work || !dirty) return !dirty;
     try { checkParams(); } catch(error) { notice(error.message); return false; }
     setBusy(true);
     try {
-      await persist(current, work, baseline);
+      lastSynced = await persist(current, work, baseline);
       baseline = clone(work); dirty = false;
       updateStatus(); return true;
     } catch (error) { notice('保存失败：' + error.message); return false; }
@@ -7745,8 +7731,8 @@ ${THEME_SELECTOR}{
         connect();
         if (!manager.getAllPresets().includes(next)) throw Error('新名称的预设没有写入成功，旧预设未删除。');
         if (wasSelected) {
-          const value = manager.findPreset(next);
-          if (value !== undefined && value !== null && value !== '') await manager.selectPreset(value);
+          const value = presetValue(next);
+          if (value !== null) await manager.selectPreset(value);
         }
         await manager.deletePreset(name);
       }
@@ -7847,18 +7833,52 @@ ${THEME_SELECTOR}{
       (failed.length ? '\n\n失败：\n' + failed.join('\n') : ''));
   }
 
+  // 在酒馆的预设下拉框里按「完整名字」找选项（酒馆自带的查找是模糊匹配，名字互相包含时会找错）
+  function presetSelect() {
+    const selector = typeof manager?.select === 'string' ? manager.select : '#settings_preset_openai';
+    return DOC.querySelector(selector) || DOC.querySelector('#settings_preset_openai');
+  }
+  function presetValue(name) {
+    const select = presetSelect();
+    const option = select ? [...select.options].find(o => o.textContent.trim() === name) : null;
+    if (option) return option.value;
+    const value = manager.findPreset?.(name);
+    return value === undefined || value === null || value === '' ? null : value;
+  }
+  async function waitSelected(name) {
+    for (let i = 0; i < 30; i++) {
+      if (manager.getSelectedPresetName() === name) return true;
+      await sleep(100);
+    }
+    return false;
+  }
+  // 让酒馆真正加载这份预设（已经在用的预设也重新加载一遍，存过的修改才会进到聊天里）
+  async function activatePreset(name) {
+    const value = presetValue(name);
+    if (value === null) throw Error('酒馆的预设列表里没有「' + name + '」，请点「刷新」后再试。');
+    try { await manager.selectPreset(value); } catch (error) { console.warn('[梨梨工作台] selectPreset 失败，改用下拉框切换', error); }
+    if (!await waitSelected(name)) {
+      const select = presetSelect();
+      if (select) {
+        select.value = String(value);
+        select.dispatchEvent(new W.Event('change', { bubbles: true }));
+      }
+      if (!await waitSelected(name)) throw Error('酒馆没有切换过去，请在酒馆原页面的预设下拉框确认一下。');
+    }
+    await sleep(300);
+  }
   async function usePreset() {
     if (busy || !current) return;
     const name = current;
     if (dirty && !await saveWork()) return;
     if (!await ask('切换使用「' + name + '」？\n将加载它的已保存内容，酒馆原页面尚未保存的预设修改会被覆盖。')) return;
-    const value = manager.findPreset(name);
-    if (value === undefined || value === null || value === '') throw Error('预设不在酒馆列表中，请刷新。');
     setBusy(true);
     try {
-      await manager.selectPreset(value);
-      if (manager.getSelectedPresetName() !== name) throw Error('切换未完成，请检查原酒馆页面。');
-      renderBooks(); notice('已切换使用「' + name + '」。');
+      await activatePreset(name);
+      renderBooks();
+      notice('已切换使用「' + name + '」，酒馆现在用的就是这份预设。');
+    } catch (error) {
+      notice('切换失败：' + error.message);
     } finally { setBusy(false); }
   }
   function updatePresetBulkStatus() {
@@ -8137,7 +8157,7 @@ ${THEME_SELECTOR}{
     if (!ui.main) return;
     ui.main.replaceChildren(); ui.paramInputs = new Map(); ui.invalidParams = new Set();
     if (!work) { ui.main.append(el('div', 'pw-empty', '选择预设后浏览条目，不会自动切换酒馆正在使用的预设。')); return; }
-    ui.main.append(el('h2', 'pw-main-title', current), el('p', 'pw-note', '浏览与保存不会自动应用；需要生效时点击「切换使用」。条目按原始顺序显示。'));
+    ui.main.append(el('h2', 'pw-main-title', current), el('p', 'pw-note', '保存正在使用的预设会自动同步到酒馆；其他预设需要生效时点击「切换使用」。条目按原始顺序显示。'));
     const exportButton = button('导出此预设', () => { checkParams(); downloadFile(current + '.json', JSON.stringify(work, null, 2)); });
     exportButton.title = '导出为酒馆可直接导入的 .json；工作台里未保存的修改也会一起导出';
     ui.main.append(row(button('创建条目', createPrompt), exportButton, button('改名', () => renamePreset(current))));
@@ -8260,7 +8280,7 @@ ${THEME_SELECTOR}{
   function worldApi(name) {
     const providers = [globalThis, W, globalThis.TavernHelper, W.TavernHelper];
     for (const provider of providers) if (typeof provider?.[name] === 'function') return provider[name].bind(provider);
-    throw Error('缺少酒馆助手世界书接口「' + name + '」。请确认酒馆助手扩展已开启并更新到 4.10 或更新版。');
+    throw Error('缺少酒馆助手世界书接口「' + name + '」。请确认脚本运行在酒馆助手全局脚本中。');
   }
   function worldbookSource(name, entries) {
     if (!Array.isArray(entries)) throw Error('世界书返回的数据不是条目列表');
@@ -8351,9 +8371,9 @@ ${THEME_SELECTOR}{
       if(!await ask('从「'+sourceSelect.value+'」复制 '+plan.count+' 个条目到「'+name+'」\n位置：'+positionText+(anchor.value.startsWith('__')?'':'的'+(side.value==='before'?'前面':'后面'))+'\n'+(plan.skipped.length?'跳过重复系统/占位条目：'+plan.skipped.join('、')+'\n':'')+(sourceType.value === 'worldbook' ? '将名称与正文复制为预设提示词，保留启用状态；世界书关键词触发规则不转换。确认保存？' : '只复制条目，不复制来源的参数、脚本或正则。确认保存？')))return;
       saving=true;modal.querySelectorAll('button,input,select').forEach(c=>c.disabled=true);
       try {
-        await persist(name,plan.next,target);undoRecord={name,before:clone(target),after:clone(plan.next)};
+        const synced=await persist(name,plan.next,target);undoRecord={name,before:clone(target),after:clone(plan.next)};
         if(current===name){work=clone(plan.next);baseline=clone(work);dirty=false;renderMain();updateStatus();}
-        saving=false;close();notice('已插入 '+plan.count+' 个条目。目标预设已保存；点击「切换使用」后生效。');
+        saving=false;close();notice('已插入 '+plan.count+' 个条目。'+(synced?'这是正在使用的预设，已同步到酒馆。':'目标预设已保存；点击「切换使用」后生效。'));
       } catch(error) { saving=false;modal.querySelectorAll('button,input,select').forEach(c=>c.disabled=false);throw error; }
     },'pw-primary'),button('下载目标备份',()=>downloadFile(targetSelect.value+'_缝合前备份.json',JSON.stringify(target,null,2))),button('关闭',close));
     modal.append(el('h3','','缝预设 · 复制到指定位置'),field('来源类型',sourceType),field('A · 来源预设 / 世界书',sourceSelect),field('来源顺序组',sourceGroup),row(search,button('搜索',()=>{renderSource();})),sourcePager,list,status,
@@ -8917,7 +8937,10 @@ ${THEME_SELECTOR}{
       connect();
       panel = el('section'); panel.id = 'pw-panel'; panel.setAttribute('aria-label', '预设工作台');
       const header = el('div', 'pw-head');
-      const save = button('保存修改', async () => { if (await saveWork()) notice('修改已保存。需要在聊天中生效时，点击「切换使用」。'); }, 'pw-primary');
+      const save = button('保存修改', async () => {
+        if (!await saveWork()) return;
+        notice(lastSynced ? '修改已保存，并已同步到酒馆，聊天里马上生效。' : '修改已保存。这份预设不是酒馆正在用的，需要时点击「切换使用」。');
+      }, 'pw-primary');
       header.append(save, button('切换使用', usePreset), button('缝预设', openStitch), button('撤销缝合', undoStitch), button('刷新', refreshCatalog));
       const body = el('div', 'pw-body'), aside = el('aside', 'pw-books'), bookSearch = textInput(bookQuery, '搜索预设名称'), presetBulkBar = el('div', 'pw-bulk-bar'), books = el('div'), main = el('main', 'pw-main'), status = el('div', 'pw-footer');
       bookSearch.addEventListener('input', () => { bookQuery = bookSearch.value; renderBooks(); });
@@ -11076,7 +11099,7 @@ ${THEME_SELECTOR}{
       close();
       const missing = API_NAMES.filter(name => typeof API[name] !== 'function');
       if (missing.length) {
-        throw Error('缺少酒馆助手接口：\n' + missing.join('\n') + '\n\n请确认酒馆助手扩展已开启并更新到 4.10 或更新版。');
+        throw Error('缺少酒馆助手接口：\n' + missing.join('\n') + '\n\n请确认脚本运行在酒馆助手脚本库中。');
       }
       panel = el('section');
       panel.id = 'wb-panel';
@@ -12727,8 +12750,14 @@ ${THEME_SELECTOR}{
         baseline = JSON.stringify(work.list || work.tree);
         dirty = false;
         const live = (scope === 'character' && target === liveAvatar()) || (scope === 'preset' && target === presetInUse()) || scope === 'global';
+        // v3.7：正则保存后马上按新规则重画聊天，像世界书一样即改即生效，不用刷新网页
+        let redrawn = false;
+        if (kind === 'regex' && live && ctx()?.chat?.length) {
+          paintStatus('正在按新正则刷新聊天…');
+          try { await refreshChat(ctx()); redrawn = true; } catch {}
+        }
         notice('已保存。' + (kind === 'script' && !work.via && live ? '\n正在运行的脚本要刷新网页后才会换成新内容。' : '')
-          + (kind === 'regex' && live ? '\n点「刷新聊天」就能看到新的正则效果。' : ''));
+          + (kind === 'regex' && live ? (redrawn ? '\n聊天已经按新的正则刷新好了。' : '\n新正则已生效，下一条消息开始就会用上。') : ''));
         return true;
       } catch (error) {
         notice('保存失败：' + (error.message || error));
@@ -13345,7 +13374,7 @@ ${THEME_SELECTOR}{
       ui.list = node('div', 'tl-list');
       const footer = node('div', 'cw-footer');
       ui.status = node('span');
-      footer.append(ui.status, DOC.createTextNode(' · 🧰 工具 · 梨梨工作台 v3.6 无书摘版'));
+      footer.append(ui.status, DOC.createTextNode(' · 🧰 工具 · 梨梨工作台 v3.8.7'));
       panel.append(ui.seg, ui.bar, ui.list, footer);
       panel.addEventListener('keydown', event => {
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); void saveWork(); }
@@ -13368,6 +13397,2011 @@ ${THEME_SELECTOR}{
     };
   }
   modules.tools = createToolsModule();
+  /* ═════════════ 🎵 音乐工作台（v3.7 新增） ═════════════
+   * 曲库：和「琴房灯 / 琴房乐队」状态栏共用浏览器 IndexedDB「lili-music」里的「songs」：
+   *   状态栏的歌 { id, kind:'piano'|'band', title, artist, tempo, style, ensemble, sel, rows, liked, savedAt }
+   *   导入的音频 { id, kind:'audio', title, artist, blob | url, duration, liked, savedAt }
+   * 歌单、播放模式、音量、悬浮唱片等设置存在 localStorage「lili-music-cfg」。
+   * 播放器常驻在工作台外面：关掉工作台也能继续放（可在设置里关掉后台播放）。 */
+  /* 网易云：自建 API Enhanced；凭证仅保留在本标签页，不写入歌单备份。 */
+  const NE = (() => {
+    const key = 'lili-netease-session';
+    let base = read('lili-netease-server', ''), cookie = '', profile = null, generation = 0;
+    try { const s = JSON.parse(W.sessionStorage.getItem(key) || '{}'); if (s.base === base) { cookie = s.cookie || ''; profile = s.profile || null; } } catch {}
+    function save() { try { W.sessionStorage.setItem(key, JSON.stringify({ base, cookie, profile })); } catch {} }
+    function clear() { generation++; cookie = ''; profile = null; try { W.sessionStorage.removeItem(key); } catch {} }
+    function configure(value) {
+      const u = new URL(value.trim());
+      if (u.username || u.password || u.search || u.hash || !(['https:'].includes(u.protocol) || (u.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(u.hostname)))) throw new Error('请填写 HTTPS 接口地址；本机 localhost 可使用 HTTP。');
+      const next = u.href.replace(/\/$/, '');
+      if (next !== base) { clear(); base = next; W.localStorage.setItem('lili-netease-server', JSON.stringify(base)); }
+    }
+    async function request(path, params = {}, signal, anonymous = false) {
+      if (!base) throw new Error('请先保存自己的网易云接口服务地址。');
+      const ctrl = new W.AbortController(), timer = W.setTimeout(() => ctrl.abort(), 20000);
+      const abort = () => ctrl.abort(); signal?.addEventListener('abort', abort, { once: true });
+      if (signal?.aborted) ctrl.abort();
+      try {
+        const response = await W.fetch(base + path + '?timestamp=' + Date.now(), {
+          method: 'POST', credentials: 'omit', redirect: 'error', referrerPolicy: 'no-referrer', signal: ctrl.signal,
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ ...params, ...(!anonymous && cookie ? { cookie } : {}) })
+        });
+        if (!response.ok) throw new Error('接口响应 HTTP ' + response.status);
+        const data = await response.json();
+        if (data.code && ![200, 800, 801, 802, 803].includes(Number(data.code))) throw new Error(Number(data.code) === 301 ? '登录已失效，请重新扫码。' : '网易云请求失败（' + data.code + '）');
+        return data;
+      } catch (e) {
+        if (e.name === 'AbortError') throw new Error(signal?.aborted ? '操作已取消。' : '接口请求超时，请检查服务地址。');
+        if (e instanceof TypeError) throw new Error('连接失败：请检查接口地址、HTTPS 和服务端跨域设置。');
+        throw e;
+      } finally { W.clearTimeout(timer); signal?.removeEventListener('abort', abort); }
+    }
+    async function account(signal) {
+      const data = await request('/login/status', {}, signal), p = (data.data || data).profile;
+      if (!p?.userId) throw new Error('尚未登录或登录已失效，请扫码登录。');
+      profile = p; save(); return p;
+    }
+    async function playlists(signal) {
+      const p = await account(signal), result = [], seen = new Set();
+      for (let offset = 0; ; offset += 100) {
+        const data = await request('/user/playlist', { uid: p.userId, limit: 100, offset }, signal);
+        if (!Array.isArray(data.playlist)) throw new Error('接口未返回歌单列表。');
+        const fresh = data.playlist.filter(x => !seen.has(String(x.id)));
+        fresh.forEach(x => { seen.add(String(x.id)); result.push(x); });
+        if (!data.more) break;
+        if (!fresh.length) throw new Error('歌单分页异常，请检查接口版本。');
+      }
+      return result;
+    }
+    async function sync(p, signal) {
+      const rows = [], seen = new Set(), owner = profile?.userId;
+      const detail = await request('/playlist/detail', { id: p.id }, signal);
+      const ids = detail.playlist?.trackIds;
+      if (!Array.isArray(ids)) throw new Error('接口没有返回完整歌曲列表，原歌单未覆盖。');
+      for (let offset = 0; offset < ids.length; offset += 200) {
+        const data = await request('/song/detail', { ids: ids.slice(offset, offset + 200).map(x => x.id).join(',') }, signal);
+        if (!Array.isArray(data.songs)) throw new Error('读取歌曲失败，原歌单未覆盖。');
+        data.songs.forEach(s => { if (!seen.has(String(s.id))) { seen.add(String(s.id)); rows.push(s); } });
+      }
+      if (rows.length !== new Set(ids.map(x => String(x.id))).size) throw new Error('歌曲数据不完整，原歌单未覆盖，请稍后重试。');
+      if (signal?.aborted) throw new Error('操作已取消。');
+      const records = rows.map(s => ({ ...LM.songs.get('netease:' + s.id), id: 'netease:' + s.id, kind: 'audio', source: 'netease', neteaseId: String(s.id), title: s.name, artist: (s.ar || s.artists || []).map(a => a.name).join(' / '), duration: (s.dt || s.duration || 0) / 1000, savedAt: Date.now(), liked: LM.songs.get('netease:' + s.id)?.liked || false }));
+      // 播放地址短期有效，不随歌曲持久保存。
+      records.forEach(r => { delete r.url; delete r.blob; });
+      await LM.putSongs(records);
+      const id = 'netease-pl:' + owner + ':' + p.id;
+      let local = LM.pl(id);
+      if (!local) { local = { id, items: [] }; LM.mc.playlists.push(local); }
+      Object.assign(local, { name: '网易云 · ' + p.name, source: 'netease', remoteId: String(p.id), owner: String(owner), items: records.map(r => r.id), syncedAt: Date.now() });
+      LM.saveMc(); LM.emit(); return records.length;
+    }
+    async function resolve(rec) {
+      const data = await request('/song/url/v1', { id: rec.neteaseId, level: 'standard' });
+      const item = data.data?.[0];
+      if (!item?.url) throw new Error('这首歌暂时不可播放，请在网易云检查账号权限或地区限制。');
+      const u = new URL(item.url); if (!['http:', 'https:'].includes(u.protocol)) throw new Error('音频地址无效。');
+      if (W.location.protocol === 'https:' && u.protocol === 'http:') u.protocol = 'https:';
+      if (item.freeTrialInfo) topTip('这首歌当前返回的是试听片段');
+      return u.href;
+    }
+    function open() {
+      const sheet = openSheet('网易云音乐 · 登录与同步'), ctrl = new W.AbortController();
+      let closed = false, loginRun = 0, busy = false, choices = [];
+      sheet.d.classList.add('ne-import-dialog');
+      sheet.onClose(() => { closed = true; loginRun++; ctrl.abort(); });
+      const selectedCount = node('span', 'cw-note', '请先读取歌单');
+      const selectAll = button('全选', () => {
+        if (busy) return;
+        const on = !choices.every(x => x.selected);
+        choices.forEach(x => { x.selected = on; }); paintSelection();
+      });
+      const importBtn = button('导入所选歌单（0）', () => run(async () => {
+        const selected = choices.filter(x => x.selected);
+        if (!selected.length) return show('请先点击歌单进行选择。');
+        let done = 0, count = 0; const failures = [];
+        for (const { p } of selected) {
+          if (closed) break;
+          show('正在导入：' + p.name + '…');
+          try { count += await sync(p, ctrl.signal); done++; }
+          catch (e) { failures.push(p.name + '：' + e.message); }
+        }
+        show('已导入 ' + done + ' 个歌单、' + count + ' 首。' + (failures.length ? failures.join('；') : '关闭本窗口后，在音乐工作台的歌单栏选择「网易云 · 歌单名」。'));
+      }), 'cw-primary');
+      function paintSelection() {
+        const n = choices.filter(x => x.selected).length;
+        for (const x of choices) {
+          x.row.setAttribute('aria-pressed', String(x.selected));
+          x.mark.textContent = x.selected ? '✓ 已选择' : '选择';
+          x.row.disabled = busy;
+        }
+        selectedCount.textContent = '已选 ' + n + ' / ' + choices.length + ' 个歌单';
+        importBtn.textContent = '导入所选歌单（' + n + '）';
+        importBtn.disabled = busy || !n;
+        selectAll.disabled = busy || !choices.length;
+        selectAll.textContent = choices.length && n === choices.length ? '取消全选' : '全选';
+      }
+      const clearLists = () => { choices = []; list.replaceChildren(); paintSelection(); };
+      sheet.foot.append(selectedCount, selectAll, importBtn, button('关闭', () => sheet.close()));
+      paintSelection();
+      const url = input('https://你的网易云接口域名', base);
+      const status = node('div', 'cw-note', profile ? '已登录：' + profile.nickname : '尚未登录');
+      const qr = node('div'), list = node('div'), controls = node('div', 'cw-actions');
+      sheet.body.append(field('连接网易云的中转服务网址', url), node('p', 'cw-note', '这里不是填网易云官网或歌单链接，而是填服务器上安装好的网易云中转服务网址。还没安装就先留空。服务需使用 NeteaseCloudMusicApi Enhanced 并允许酒馆跨域访问；只填写自己或信任的服务，登录凭证会发送到这里。'), controls, status, qr, list,
+        node('p', 'cw-note', '同步将网易云歌单保存到工作台；再次同步会更新对应歌单。本地喜欢、改名和删除不会反向修改网易云。登录保留在当前标签页，退出后清除；歌曲能否播放取决于账号权限。'));
+      const show = text => { if (!closed) status.replaceChildren(node('span', '', text)); };
+      async function run(fn) {
+        if (busy || closed) return; busy = true; paintSelection();
+        [...controls.children].forEach(b => b.disabled = true);
+        status.replaceChildren(loadingStatus('正在连接…'));
+        try { await fn(); } catch (e) { show(e.message); }
+        finally { busy = false; paintSelection(); [...controls.children].forEach(b => b.disabled = false); }
+      }
+      async function displayLists() {
+        const all = await playlists(ctrl.signal); if (closed) return;
+        clearLists(); qr.replaceChildren();
+        if (!all.length) list.append(node('p', 'cw-note', '这个账号暂无可导入的歌单。'));
+        for (const p of all) {
+          const x = { p, selected: !!LM.pl('netease-pl:' + profile.userId + ':' + p.id) };
+          x.row = button('', () => { if (busy) return; x.selected = !x.selected; paintSelection(); }, 'ne-playlist-choice');
+          x.mark = node('span', 'ne-choice-mark');
+          x.row.append(x.mark, node('span', 'ne-choice-name', p.name + ' · ' + (p.trackCount || 0) + ' 首'));
+          choices.push(x); list.append(x.row);
+        }
+        paintSelection();
+        show('已登录：' + profile.nickname + ' · 找到 ' + all.length + ' 个歌单');
+      }
+      controls.append(button('保存地址', () => run(async () => { configure(url.value); loginRun++; qr.replaceChildren(); clearLists(); show('地址已保存，可以扫码登录。'); })),
+        button('扫码登录 / 刷新二维码', () => run(async () => {
+          configure(url.value); const my = ++loginRun, gen = generation; clearLists(); qr.replaceChildren();
+          const k = (await request('/login/qr/key', {}, ctrl.signal, true)).data?.unikey;
+          if (!k) throw new Error('生成登录码失败。');
+          const data = (await request('/login/qr/create', { key: k, qrimg: true }, ctrl.signal, true)).data;
+          if (!data?.qrimg || !/^data:image\/(png|jpeg);base64,/.test(data.qrimg)) throw new Error('接口没有返回有效二维码。');
+          if (closed) return;
+          const img = node('img'); img.src = data.qrimg; img.alt = '用网易云音乐扫描登录'; img.style.cssText = 'display:block;width:220px;max-width:100%;margin:12px auto'; qr.append(img);
+          show('请用网易云 App 扫码并确认；同一手机可尝试保存二维码后从相册识别。');
+          const poll = async () => {
+            if (closed || my !== loginRun || gen !== generation) return;
+            try {
+              const d = await request('/login/qr/check', { key: k, noCookie: true }, ctrl.signal, true);
+              if (closed || my !== loginRun || gen !== generation) return;
+              if (+d.code === 800) return show('二维码已过期，请刷新。');
+              if (+d.code === 803) { if (!d.cookie) throw new Error('登录未返回凭证，请检查接口版本。'); cookie = d.cookie; save(); await run(displayLists); return; }
+              show(+d.code === 802 ? '扫码成功，请在网易云确认登录。' : '等待扫码…');
+              W.setTimeout(poll, 2500);
+            } catch (e) { show(e.message); }
+          };
+          W.setTimeout(poll, 2500);
+        })), button('读取我的歌单', () => run(displayLists)), button('退出登录', () => { if (busy) return; clear(); loginRun++; qr.replaceChildren(); clearLists(); show('已清除当前标签页的登录凭证。'); }));
+    }
+    function searchRecord(song) {
+      if (!/^\d+$/.test(String(song.id))) throw new Error('歌曲编号无效。');
+      const old = LM.songs.get('netease:' + song.id);
+      const rec = { ...old, id: 'netease:' + song.id, kind: 'audio', source: 'netease', neteaseId: String(song.id),
+        title: old?.title || song.name || '无题', artist: (song.ar || song.artists || []).map(a => a.name).join(' / '),
+        duration: (song.dt || song.duration || 0) / 1000, savedAt: old?.savedAt || Date.now(), liked: !!old?.liked };
+      delete rec.url; delete rec.blob;
+      return rec;
+    }
+    function openSearch(initialPlaylist = 'mine') {
+      const sheet = openSheet('网易云 · 搜索歌曲');
+      sheet.d.classList.add('ne-search-dialog');
+      let closed = false, runId = 0, ctrl = null, page = 0, query = '', more = false;
+      const keywords = input('输入歌名或歌手'); keywords.setAttribute('aria-label', '搜索歌名或歌手');
+      const target = node('select'); target.setAttribute('aria-label', '加入哪个歌单');
+      for (const p of LM.mc.playlists) { const option = node('option', '', p.name); option.value = p.id; target.append(option); }
+      target.value = LM.pl(initialPlaylist) ? initialPlaylist : 'mine';
+      const status = node('div', 'cw-note', '输入歌名或歌手，搜索网易云曲库。'); status.setAttribute('role', 'status');
+      const results = node('div', 'ne-search-results');
+      const prev = button('上一页', () => search(page - 1));
+      const next = button('下一页', () => search(page + 1));
+      const pageInfo = node('span', 'cw-note');
+      function pages(busy = false) { prev.disabled = busy || page === 0; next.disabled = busy || !more; pageInfo.textContent = query ? '第 ' + (page + 1) + ' 页' : ''; }
+      async function add(song, playNow, row) {
+        const playlistId = target.value;
+        if (!LM.pl(playlistId)) { status.textContent = '所选歌单已删除，请关闭搜索后重新打开。'; return; }
+        const buttons = [...row.querySelectorAll('button')]; buttons.forEach(b => b.disabled = true);
+        try {
+          const rec = searchRecord(song);
+          if (playlistId === 'fav') rec.liked = true;
+          await LM.putSong(rec);
+          LM.addTo('mine', [rec.id]);
+          if (LM.pl(playlistId)) LM.addTo(playlistId, [rec.id]);
+          if (closed) return;
+          status.textContent = '已加入「' + (LM.pl(playlistId)?.name || '我的音乐') + '」：' + rec.title;
+          if (playNow) LM.playAt(LM.pl(playlistId) ? playlistId : 'mine', rec.id);
+        } catch (e) { if (!closed) status.textContent = '加入失败：' + e.message; }
+        finally { buttons.forEach(b => b.disabled = false); }
+      }
+      async function search(wantedPage = 0, fresh = false) {
+        const text = (fresh ? keywords.value : query).trim();
+        if (!text) { status.textContent = '先输入歌名或歌手吧。'; return; }
+        if (!base) { status.textContent = '请先在「网易云 · 登录 / 同步」保存接口服务地址。'; return; }
+        ctrl?.abort(); ctrl = new W.AbortController(); const mine = ++runId, gen = generation;
+        pages(true); results.replaceChildren(); status.replaceChildren(loadingStatus('正在搜索…'));
+        try {
+          const data = await request('/cloudsearch', { keywords: text, type: 1, limit: 30, offset: wantedPage * 30 }, ctrl.signal);
+          if (closed || mine !== runId) return;
+          if (gen !== generation) throw new Error('连接已更改，请重新搜索。');
+          const result = data.result;
+          if (!result || (result.songs != null && !Array.isArray(result.songs))) throw new Error('接口未返回有效搜索结果。');
+          const songs = result.songs || [];
+          query = text; page = wantedPage;
+          more = songs.length > 0 && (Number.isFinite(Number(result.songCount)) ? (page + 1) * 30 < Number(result.songCount) : songs.length === 30);
+          status.textContent = songs.length ? '找到以下歌曲；播放范围以当前账号权限为准。' : '没有找到歌曲，试试其他关键词。';
+          for (const song of songs) {
+            const row = node('div', 'cw-list-item ne-search-row');
+            const info = node('div', 'ne-search-info');
+            info.append(node('b', '', song.name || '无题'), node('div', 'cw-note', [(song.ar || song.artists || []).map(a => a.name).join(' / '), song.al?.name || song.album?.name, LM.fmt(song.dt || song.duration || 0)].filter(Boolean).join(' · ')));
+            row.append(info, button('播放', () => add(song, true, row)), button('加入歌单', () => add(song, false, row)));
+            results.append(row);
+          }
+        } catch (e) { if (!closed && mine === runId) { more = false; status.textContent = e.message; } }
+        finally { if (!closed && mine === runId) pages(); }
+      }
+      const submit = button('搜索', () => search(0, true), 'cw-primary');
+      keywords.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); search(0, true); } });
+      const controls = node('div', 'cw-actions'); controls.append(keywords, submit);
+      sheet.body.append(controls, field('加入歌单', target), node('p', 'cw-note', '播放会先保存到所选歌单和「我的音乐」。使用已经配置的网易云连接；账号权限不足的歌曲仍可能只有试听或无法播放。'), status, results);
+      sheet.foot.append(prev, pageInfo, next, button('关闭', () => sheet.close()));
+      sheet.onClose(() => { closed = true; runId++; ctrl?.abort(); }); pages(); keywords.focus();
+    }
+
+    return { open, openSearch, resolve, request };
+  })();
+
+  const LM = (() => {
+    const BASE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+    const midiOf = s => {
+      const m = String(s).trim().match(/^([A-Ga-g])([#b♯♭]?)(-?\d)$/);
+      if (!m) return null;
+      const acc = m[2] === '#' || m[2] === '♯' ? 1 : m[2] === 'b' || m[2] === '♭' ? -1 : 0;
+      return 12 * (+m[3] + 1) + BASE[m[1].toUpperCase()] + acc;
+    };
+    const parse = text => {
+      const out = [];
+      for (const tok of String(text || '').replace(/[，,；;]/g, ' ').trim().split(/\s+/)) {
+        if (!tok || /^\|+$/.test(tok)) continue;
+        const m = tok.match(/^([^.*\/:：]+)(\.|[*:：][\d.]+|\/[\d.]+)?$/);
+        if (!m) continue;
+        let beats = 1; const d = m[2];
+        if (d === '.') beats = 1.5;
+        else if (d && '*:：'.includes(d[0])) beats = parseFloat(d.slice(1)) || 1;
+        else if (d && d[0] === '/') beats = 1 / (parseFloat(d.slice(1)) || 1);
+        beats = Math.max(.125, Math.min(8, beats));
+        const rest = /^[Rr-]$/.test(m[1]);
+        const midis = rest ? [] : m[1].split('+').map(midiOf).filter(n => n != null && n >= 21 && n <= 108);
+        if (!rest && !midis.length) continue;
+        out.push({ midis, beats });
+      }
+      return out;
+    };
+    /* ---------- 乐器表：合奏 / 独奏 / 自定义都从这里选 ---------- */
+    const INST = {
+      piano: ['钢琴', 'Piano', 'poly bass'], violin: ['小提琴', 'Violin', ''], cello: ['大提琴', 'Cello', 'bass'],
+      flute: ['长笛', 'Flute', ''], trumpet: ['小号', 'Trumpet', ''], sax: ['萨克斯', 'Saxophone', ''],
+      organ: ['管风琴', 'Organ', 'poly bass pad'], aguitar: ['吉他', 'Guitar', 'poly'], eguitar: ['电吉他', 'Electric Guitar', ''],
+      ebass: ['贝斯', 'Bass', 'bass low'], harp: ['竖琴', 'Harp', 'poly bass'], musicbox: ['八音盒', 'Music Box', 'poly'],
+      marimba: ['马林巴', 'Marimba', 'poly'], guzheng: ['古筝', 'Guzheng', 'poly bass'], pipa: ['琵琶', 'Pipa', 'poly'],
+      guqin: ['古琴', 'Guqin', 'poly bass'], dizi: ['笛子', 'Dizi', ''], erhu: ['二胡', 'Erhu', ''], morin: ['马头琴', 'Morin Khuur', ''],
+      voice: ['人声', 'Aurora Voice', ''], choir: ['合唱', 'Choir', 'pad'],
+      kit: ['架子鼓', 'Drum Kit', 'perc'], frame: ['手鼓', 'Frame Drum', 'perc'], bigdrum: ['大鼓', 'Big Drum', 'perc'], timpani: ['定音鼓', 'Timpani', 'perc'],
+    };
+    const melodyTop = e => e.midis.length ? Math.max(...e.midis) : null;
+    const has = (id, f) => (INST[id]?.[2] || '').split(' ').includes(f);
+    const GROUPS = [
+      { id: 'orch', name: '管弦', en: 'Orchestra', rev: .32 },
+      { id: 'guofeng', name: '国风', en: 'Guzheng · Dizi · Pipa', rev: .3 },
+      { id: 'steppe', name: '草原', en: 'Morin · Drums', rev: .22 },
+      { id: 'band', name: '乐队', en: 'Guitar · Bass', rev: .14 },
+      { id: 'harp', name: '竖琴', en: 'Harp', rev: .5 },
+      { id: 'aurora', name: '欧若拉', en: 'Aurora Voice', rev: .55 },
+    ];
+    const REV = { harp: .5, voice: .55, choir: .55, musicbox: .45, flute: .35, dizi: .32, guzheng: .32, erhu: .3, violin: .32, organ: .4 };
+    const selName = s => s.kind === 'group' ? GROUPS.find(g => g.id === s.id)?.name : s.kind === 'solo' ? INST[s.id]?.[0] + '独奏' : '自定义 · ' + s.list.map(i => INST[i][0]).join(' ');
+    const selRev = s => s.kind === 'group' ? GROUPS.find(g => g.id === s.id).rev : s.kind === 'solo' ? (REV[s.id] ?? .28) : Math.max(.18, ...s.list.map(i => REV[i] ?? .22));
+    function SongModel(rec, tempoOv) {
+      const name = rec.title || '无题', styleText = rec.style || '', ensembleText = rec.ensemble || '';
+      const tempo = Math.max(30, Math.min(240, Math.round(tempoOv || rec.tempo || 84)));
+      const beatMs = 60000 / tempo;
+      const events = [], lines = [];
+      let t = 0;
+      (rec.rows || []).forEach((r, li) => {
+        let notes = parse(r.notes);
+        if (!notes.length) notes = [{ midis: [], beats: 4 }];
+        lines.push({ text: r.text || '', trans: r.trans || '', start: t });
+        for (const n of notes) { events.push({ t, beats: n.beats, dur: n.beats * beatMs, midis: n.midis, li }); t += n.beats * beatMs; }
+      });
+      if (!events.length) events.push({ t: 0, beats: 4, dur: 4 * beatMs, midis: [], li: 0 }), t = 4 * beatMs;
+      const total = t, totalBeats = total / beatMs;
+      /* ---------- 和声：猜调、每两拍配一个和弦 ---------- */
+      const MAJ = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88];
+      const MIN = [6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17];
+      const hist = new Array(12).fill(0);
+      events.forEach(e => e.midis.forEach(m => { hist[m % 12] += e.beats; }));
+      let key = { tonic: 0, minor: false, score: -1e9 };
+      for (let k = 0; k < 12; k++) for (const [prof, minor] of [[MAJ, false], [MIN, true]]) {
+        let s = 0; for (let i = 0; i < 12; i++) s += hist[(i + k) % 12] * prof[i];
+        if (s > key.score) key = { tonic: k, minor, score: s };
+      }
+      const DEG = key.minor ? [[0, 'm', 1.2], [3, '', .8], [5, 'm', 1], [7, '', 1.1], [8, '', .9], [10, '', .8]]
+                            : [[0, '', 1.2], [2, 'm', .7], [4, 'm', .6], [5, '', 1], [7, '', 1.1], [9, 'm', .9]];
+      const chords = DEG.map(([d, q, w]) => { const r = (key.tonic + d) % 12; return { root: r, pcs: [r, (r + (q ? 3 : 4)) % 12, (r + 7) % 12], w }; });
+      const SEG = 2;                                      // 两拍一个和弦
+      const segs = [];
+      let prev = chords[0];
+      for (let b = 0; b < totalBeats - 1e-6; b += SEG) {
+        const w = new Array(12).fill(0); let explicit = null;
+        for (const e of events) {
+          const eb = e.t / beatMs, ee = eb + e.beats, ov = Math.min(ee, b + SEG) - Math.max(eb, b);
+          if (ov <= 0) continue;
+          if (e.midis.length > 1) explicit = e.midis;
+          e.midis.forEach(m => { w[m % 12] += ov; });
+        }
+        let best = prev;
+        if (explicit) {
+          const pcs = [...new Set(explicit.map(m => m % 12))];
+          best = { root: Math.min(...explicit) % 12, pcs, w: 1 };
+        } else if (w.some(x => x > 0)) {
+          let bs = -1e9;
+          for (const c of chords) {
+            let sc = c.pcs.reduce((a, p) => a + w[p], 0) * 2 - w.reduce((a, x, i) => a + (c.pcs.includes(i) ? 0 : x), 0) * .8 + c.w * .5 + (c === prev ? .3 : 0);
+            if (w[c.root] > 0) sc += .4;
+            if (sc > bs) { bs = sc; best = c; }
+          }
+        }
+        segs.push({ b, beats: Math.min(SEG, totalBeats - b), ...best });
+        prev = best;
+      }
+      const near = (pc, lo) => { let m = lo - ((lo - pc) % 12 + 12) % 12; if (m < lo) m += 12; return m; }; // 不低于 lo 的该音级
+      const guessSel = () => {
+        const e = ensembleText.trim().toLowerCase();
+        if (e) {
+          const g = GROUPS.find(g => e.includes(g.name) || e.includes(g.en.toLowerCase()) || e.includes(g.id)); if (g) return { kind: 'group', id: g.id };
+          const hits = Object.keys(INST).filter(k => e.includes(INST[k][0]) || e.includes(INST[k][1].toLowerCase()));
+          if (hits.length === 1 && !has(hits[0], 'perc')) return { kind: 'solo', id: hits[0] };
+          if (hits.length > 1) { const lead = hits.find(k => !has(k, 'perc') && !has(k, 'low')) || hits[0]; return { kind: 'custom', lead, list: hits }; }
+        }
+        const s = (styleText + ' ' + name).toLowerCase();
+        if (/国风|古风|古筝|笛|琵琶|二胡|中国|东方|五声|guzheng|pipa|dizi/.test(s)) return { kind: 'group', id: 'guofeng' };
+        if (/草原|游牧|马头琴|呼麦|蒙古|鼓|steppe|nomad|drum/.test(s)) return { kind: 'group', id: 'steppe' };
+        if (/吉他|贝斯|乐队|摇滚|民谣|city ?pop|rock|guitar|band|bossa|jazz|blues|funk/.test(s)) return { kind: 'group', id: 'band' };
+        if (/竖琴|harp|摇篮|lullaby/.test(s)) return { kind: 'group', id: 'harp' };
+        if (/aurora|欧若拉|人声|空灵|吟唱|圣咏|choir|ethereal|vocal/.test(s)) return { kind: 'group', id: 'aurora' };
+        return { kind: 'group', id: 'orch' };
+      };
+      /* ---------- 编曲 ---------- */
+      function arrange(sel) {
+        const out = [], B = beatMs, add = (tb, db, inst, midi, vel = .8) => out.push({ t: tb * B, dur: db * B, inst, midi, vel });
+        const segTones = s => { const [r, third, fifth] = s.pcs; return { r, third: third ?? r, fifth: fifth ?? r, bass: near(r, 36), low: near(r, 48) }; };
+        const melody = (inst, shift = 0, vel = .85) => events.forEach(e => {
+          const eb = e.t / B;
+          if (e.midis.length > 1) { if (has(inst, 'poly') || has(inst, 'pad')) e.midis.forEach((m, i) => add(eb + (has(inst, 'pad') ? 0 : i * .08), e.beats, inst, m + shift, .55)); else add(eb, e.beats, inst, Math.max(...e.midis) + shift, vel * .8); }
+          else if (e.midis.length) add(eb, e.beats, inst, e.midis[0] + shift, vel);
+        });
+        const bassLine = (inst, vel = .5) => segs.forEach(s => { const x = segTones(s); add(s.b, s.beats, inst, x.bass + (has(inst, 'low') ? 0 : 12), vel); });
+        const arps = (inst, k = 0, vel = .34) => segs.forEach((s, si) => {
+          const x = segTones(s), L = s.beats;
+          const pats = [[x.low, near(x.fifth, x.low), near(x.third, x.low + 12), near(x.fifth, x.low + 12)],
+                        [x.low + 12, near(x.third, x.low + 12), near(x.fifth, x.low + 12), x.low + 24],
+                        [near(x.fifth, x.low), x.low + 12, near(x.third, x.low + 12), x.low + 12]];
+          const p = pats[k % 3], step = inst === 'musicbox' || inst === 'marimba' ? .5 : has(inst, 'bass') ? .5 : .5;
+          for (let i = 0; i < L / step; i++) add(s.b + i * step, step * 1.2, inst, p[i % 4] + (inst === 'musicbox' ? 12 : 0), vel);
+        });
+        const pad = (inst, which, vel = .26) => segs.forEach(s => {
+          const x = segTones(s);
+          if (has(inst, 'pad')) [near(x.r, 55), near(x.third, 55), near(x.fifth, 55)].forEach(m => add(s.b, s.beats + .2, inst, m, vel));
+          else add(s.b, s.beats, inst, near(which ? x.fifth : x.third, 55), vel);
+        });
+        const perc = kind => segs.forEach((s, si) => {
+          const b = s.b, L = s.beats;
+          if (kind === 'kit') { for (let i = 0; i < L * 2; i++) add(b + i * .5, .2, 'hat', 0, i % 2 ? .22 : .32); add(b, .5, 'kick', 0, .8); if (L > 1) add(b + 1, .5, 'snare', 0, .55); }
+          else if (kind === 'frame') for (let i = 0; i < L; i++) { add(b + i + .5, .25, 'frame', 0, .42); add(b + i + .75, .25, 'frame', 0, .5); }
+          else if (kind === 'bigdrum') for (let i = 0; i < L; i++) add(b + i, .5, 'bigdrum', 0, i === 0 ? .85 : .5);
+          else if (kind === 'timpani' && si % 2 === 0) add(b, 1, 'timpani', segTones(s).bass, .4);
+        });
+        if (sel.kind === 'solo') {
+          const id = sel.id;
+          melody(id, has(id, 'low') ? -12 : 0);
+          if (has(id, 'poly')) { arps(id, 0, .3); if (has(id, 'bass')) bassLine(id, .42); }
+          if (id === 'organ' || id === 'choir') pad(id, 0, .22);
+        } else if (sel.kind === 'custom') {
+          const lead = sel.lead;
+          melody(lead, has(lead, 'low') ? -12 : 0);
+          let bassDone = false, arpK = 0, padK = 0;
+          sel.list.filter(i => i !== lead).forEach(i => {
+            if (has(i, 'perc')) perc(i);
+            else if (has(i, 'bass') && !bassDone && (has(i, 'low') || !has(i, 'poly') || !sel.list.some(j => j !== lead && has(j, 'low')))) { bassLine(i, .5); bassDone = true; }
+            else if (has(i, 'poly')) arps(i, arpK++, .3);
+            else pad(i, padK++, has(i, 'pad') ? .24 : .3);
+          });
+        } else {
+          const id = sel.id;
+          const lead = { orch: 'violin', guofeng: 'dizi', steppe: 'morin', band: 'eguitar', harp: 'harp', aurora: 'voice' }[id];
+          const chordInst = { orch: 'piano', guofeng: 'guzheng', steppe: 'morin', band: 'aguitar', harp: 'harp', aurora: 'choir' }[id];
+          events.forEach(e => {
+            const eb = e.t / B;
+            if (e.midis.length > 1) e.midis.forEach((m, i) => add(eb + (/guzheng|harp|aguitar/.test(chordInst) ? i * .08 : 0), e.beats, chordInst, m, .55));
+            else if (e.midis.length) add(eb, e.beats, lead, e.midis[0], .85);
+          });
+          segs.forEach((s, si) => {
+            const { r, third, fifth, bass, low } = segTones(s), b = s.b, L = s.beats;
+            const tones = [near(r, 55), near(third, 55), near(fifth, 55)].sort((x, y) => x - y);
+            if (id === 'orch') {
+              add(b, L, 'cello', bass + 12, .55); tones.forEach(m => add(b, L, 'strings', m, .28));
+              const arp = [low, near(fifth, low), near(third, low + 12), near(fifth, low + 12)];
+              for (let i = 0; i < L * 2; i++) add(b + i * .5, .6, 'piano', arp[i % 4], .38);
+              if (si % 2 === 0) add(b, 1, 'timpani', bass, .35);
+            } else if (id === 'guofeng') {
+              add(b, L, 'guzheng', bass + 12, .55);
+              [low, near(fifth, low), low + 12, near(third, low + 12), near(fifth, low + 12), low + 24].forEach((m, i) => add(b + i * .16, L - i * .16, 'guzheng', m, .32));
+              for (let i = 0; i < L; i++) add(b + i + .5, .4, 'pipa', near(i % 2 ? fifth : r, 57), .3);
+              if (si % 2 === 0) add(b, 1, 'guqin', bass, .4);
+            } else if (id === 'steppe') {
+              add(b, L, 'drone', near(key.tonic, 38), .42); add(b, L, 'drone', near((key.tonic + 7) % 12, 45), .3);
+              if (si % 4 === 0) add(b, L * 2, 'throat', near(key.tonic, 43), .32);
+              for (let i = 0; i < L; i++) { add(b + i, .5, 'bigdrum', 0, i === 0 ? .9 : .6); add(b + i + .5, .25, 'frame', 0, .45); add(b + i + .75, .25, 'frame', 0, .55); }
+            } else if (id === 'band') {
+              add(b, .9, 'ebass', bass, .7); add(b + 1, .9, 'ebass', near(fifth, 36), .6);
+              const strum = [low, near(fifth, low), low + 12, near(third, low + 12), near(fifth, low + 12)];
+              [[0, 1], [1, .5], [1.5, .5]].forEach(([o, d], k) => strum.forEach((m, i) => add(b + o + (k === 1 ? (4 - i) : i) * .025, d, 'aguitar', m, k ? .3 : .42)));
+              for (let i = 0; i < L * 2; i++) add(b + i * .5, .2, 'hat', 0, i % 2 ? .25 : .35);
+              add(b, .5, 'kick', 0, .8); add(b + 1, .5, 'snare', 0, .6); if (L > 1.5) add(b + 1.5, .5, 'kick', 0, .5);
+            } else if (id === 'harp') {
+              const arp = [low, near(third, low), near(fifth, low), low + 12, near(third, low + 12), near(fifth, low + 12)];
+              (si % 2 === 0 ? arp : [...arp].reverse()).forEach((m, i) => add(b + i * (L / 6), L - i * (L / 6) + .5, 'harp', m, .36));
+              add(b, L, 'pad', bass + 12, .22);
+            } else if (id === 'aurora') {
+              tones.forEach(m => add(b, L + .3, 'choir', m, .3)); add(b, L, 'sub', bass, .3);
+              if (si % 2 === 1) add(b + L / 2, 1.5, 'bell', near(fifth, 79), .18);
+            }
+          });
+        }
+        return out.sort((x, y) => x.t - y.t);
+      }
+      const rawPiano = () => {
+        const out = [];
+        events.forEach(e => e.midis.forEach(m => out.push({ t: e.t, dur: e.dur * .92, inst: 'piano', midi: m, vel: e.midis.length > 1 ? .55 : .8 })));
+        return out;
+      };
+      return { lines, total, tempo, guessSel, arrange: sel => (!sel || sel.kind === 'raw') ? rawPiano() : arrange(sel) };
+    }
+    /* ---------- 声音引擎：同一套代码既能现场播放，也能离线渲染成文件 ---------- */
+    const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+    const ksCache = new Map();
+    function Engine(ctx, live, dest) {
+      const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 3;
+      const master = ctx.createGain(); master.gain.value = .55; master.connect(comp); comp.connect(dest || ctx.destination);
+      const dry = ctx.createGain(); dry.connect(master);
+      const conv = ctx.createConvolver(), wet = ctx.createGain(); conv.connect(wet); wet.connect(master);
+      const len = Math.floor(ctx.sampleRate * 2.8), ir = ctx.createBuffer(2, len, ctx.sampleRate);
+      let sd = 7; const rr = () => ((sd = (sd * 1664525 + 1013904223) >>> 0) / 2147483648 - 1);
+      for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = rr() * Math.pow(1 - i / len, 2.6); }
+      conv.buffer = ir;
+      const voices = new Set();
+      const out = (node, send = 1) => { node.connect(dry); const s = ctx.createGain(); s.gain.value = send; node.connect(s); s.connect(conv); };
+      const track = (nodes, g, end) => { if (!live) return; const v = { nodes, g }; voices.add(v); setTimeout(() => voices.delete(v), Math.max(0, (end - ctx.currentTime) * 1000) + 300); };
+      const env = (g, t0, a, peak, d, sus, rel, t1) => {
+        g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(peak, t0 + a);
+        g.gain.exponentialRampToValueAtTime(Math.max(.0002, peak * sus), t0 + a + d);
+        g.gain.setValueAtTime(Math.max(.0002, peak * sus), Math.max(t1, t0 + a + d)); g.gain.exponentialRampToValueAtTime(.0001, Math.max(t1, t0 + a + d) + rel);
+        return Math.max(t1, t0 + a + d) + rel;
+      };
+      let nbuf = null;
+      const noise = () => { if (!nbuf) { nbuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); const d = nbuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = rr(); } const s = ctx.createBufferSource(); s.buffer = nbuf; return s; };
+      function ks(midi, kind) {
+        const k = ctx.sampleRate + kind + midi; if (ksCache.has(k)) return ksCache.get(k);
+        const P = { guzheng: [2.6, .996, 1], pipa: [1.1, .992, 1], harp: [3.2, .998, 0], aguitar: [1.8, .994, 1], eguitar: [2.2, .996, 1], ebass: [1.8, .995, 0], guqin: [2.8, .997, 0] }[kind];
+        const [secs, decay, bright] = P, sr = ctx.sampleRate, n = Math.floor(sr * secs), N = Math.max(2, Math.round(sr / hz(midi)));
+        const buf = ctx.createBuffer(1, n, sr), d = buf.getChannelData(0), ring = new Float32Array(N); let last = 0;
+        for (let i = 0; i < N; i++) { const r = rr(); ring[i] = bright ? r : (last = last * .6 + r * .4); }
+        for (let i = 0, p = 0; i < n; i++) { const nx = (p + 1) % N, v = ring[p]; d[i] = v; ring[p] = decay * .5 * (v + ring[nx]); p = nx; }
+        let pk = 0; for (let i = 0; i < Math.min(n, 4000); i++) pk = Math.max(pk, Math.abs(d[i])); if (pk) for (let i = 0; i < n; i++) d[i] /= pk;
+        ksCache.set(k, buf); return buf;
+      }
+      function pluck(kind, midi, t0, dur, vel, bend) {
+        const src = ctx.createBufferSource(); src.buffer = ks(midi, kind);
+        const f = ctx.createBiquadFilter(); f.type = 'lowpass';
+        f.frequency.value = { guzheng: 6000, pipa: 5000, harp: 2600, aguitar: 4200, eguitar: 3200, ebass: 900, guqin: 1800 }[kind];
+        const g = ctx.createGain(); g.gain.value = vel; let node = f;
+        if (kind === 'eguitar') { const ws = ctx.createWaveShaper(), c = new Float32Array(256); for (let i = 0; i < 256; i++) c[i] = Math.tanh((i / 128 - 1) * 2.2); ws.curve = c; f.connect(ws); node = ws; }
+        if (bend) { src.playbackRate.setValueAtTime(1, t0 + dur * .5); src.playbackRate.linearRampToValueAtTime(Math.pow(2, 1 / 12), t0 + dur * .5 + .12); }
+        src.connect(f); node.connect(g); out(g);
+        const hold = { harp: 2.8, guzheng: 2.2, guqin: 2.4, pipa: .9 }[kind] || dur + .4, end = t0 + Math.max(dur, .2) + hold * .6;
+        g.gain.setValueAtTime(vel, Math.max(t0, end - .35)); g.gain.exponentialRampToValueAtTime(.0001, end);
+        src.start(t0); src.stop(end + .05); track([src], g, end);
+      }
+      function sustained(kind, midi, t0, dur, vel) {
+        const f0 = hz(midi), t1 = t0 + dur, nodes = [], g = ctx.createGain(), og = ctx.createGain(); og.gain.value = vel;
+        const vib = ctx.createOscillator(), vibG = ctx.createGain();
+        const VR = { violin: [5.6, .006], cello: [5, .005], morin: [6, .009], erhu: [6.5, .012], dizi: [5.4, .005], flute: [5, .004], voice: [5.2, .007], choir: [4.6, .004], sax: [5, .006], trumpet: [5.5, .003] }[kind] || [5, 0];
+        vib.frequency.value = VR[0]; vibG.gain.setValueAtTime(0, t0); vibG.gain.linearRampToValueAtTime(f0 * VR[1], t0 + .35); vib.connect(vibG); nodes.push(vib);
+        const osc = (type, mul, det, gain) => { const o = ctx.createOscillator(); o.type = type; o.frequency.value = f0 * mul; o.detune.value = det; vibG.connect(o.frequency); const x = ctx.createGain(); x.gain.value = gain; o.connect(x); nodes.push(o); return x; };
+        const bp = (fr, q, a) => { const b = ctx.createBiquadFilter(); b.type = 'bandpass'; b.frequency.value = fr; b.Q.value = q; const x = ctx.createGain(); x.gain.value = a; b.connect(x); return [b, x]; };
+        let chain;
+        if (kind === 'violin' || kind === 'cello' || kind === 'strings') {
+          const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = kind === 'cello' ? 1500 : kind === 'strings' ? 1700 : 3200; lp.Q.value = .7;
+          const body = ctx.createBiquadFilter(); body.type = 'peaking'; body.frequency.value = kind === 'cello' ? 400 : 900; body.gain.value = 5;
+          [osc('sawtooth', 1, -6, .5), osc('sawtooth', 1, 7, .5), ...(kind === 'strings' ? [osc('sawtooth', 1, 14, .4)] : [])].forEach(n => n.connect(lp)); lp.connect(body); chain = body;
+        } else if (kind === 'morin' || kind === 'erhu') {
+          const mix = ctx.createGain(), s = osc('sawtooth', 1, 0, .8);
+          const F = kind === 'morin' ? [[850, 1.4, 1], [2400, 2, .6]] : [[1100, 2.2, 1], [2900, 3, .7], [600, 1.5, .4]];
+          F.forEach(([fr, q, a]) => { const [b, x] = bp(fr, q, a); s.connect(b); x.connect(mix); });
+          const low = ctx.createBiquadFilter(); low.type = 'lowpass'; low.frequency.value = kind === 'morin' ? 500 : 700; s.connect(low); const lg = ctx.createGain(); lg.gain.value = kind === 'morin' ? 1 : .5; low.connect(lg); lg.connect(mix);
+          if (kind === 'erhu') nodes.forEach(n => { if (n.frequency && n !== vib) { const v0 = n.frequency.value; n.frequency.setValueAtTime(v0 * .96, t0); n.frequency.linearRampToValueAtTime(v0, t0 + .12); } });
+          chain = mix;
+        } else if (kind === 'dizi' || kind === 'flute') {
+          const mix = ctx.createGain(); osc('sine', 1, 0, .8).connect(mix); osc('triangle', 2, 0, .12).connect(mix);
+          if (kind === 'dizi') { const bz = osc('sawtooth', 1, 0, .05), [b, x] = bp(f0 * 3, 3, 1); bz.connect(b); x.connect(mix); }
+          const nb = noise(); nb.loop = true; const [b, x] = bp(f0 * 2, 2, .07); nb.connect(b); x.connect(mix); nodes.push(nb);
+          if (kind === 'dizi') nodes.forEach(n => { if (n.frequency && n !== vib) { const v0 = n.frequency.value; n.frequency.setValueAtTime(v0 * .97, t0); n.frequency.linearRampToValueAtTime(v0, t0 + .08); } });
+          chain = mix;
+        } else if (kind === 'voice' || kind === 'choir' || kind === 'throat') {
+          const F = kind === 'voice' ? [[800, 1, 8], [1150, .5, 9], [2900, .25, 12]] : kind === 'choir' ? [[350, 1, 6], [650, .35, 8], [2400, .12, 12]] : [[300, 1, 10], [1600, .9, 25], [3200, .2, 20]];
+          const mix = ctx.createGain(), srcs = kind === 'choir' ? [osc('sawtooth', 1, -9, .4), osc('sawtooth', 1, 8, .4), osc('sawtooth', 2, 3, .12)] : [osc('sawtooth', 1, 0, .6), osc('square', 1, 4, .15)];
+          F.forEach(([fr, a, q]) => { const [b, x] = bp(fr, q, a * 3); srcs.forEach(s => s.connect(b)); x.connect(mix); }); chain = mix;
+        } else if (kind === 'trumpet' || kind === 'sax') {
+          const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = kind === 'sax' ? 2 : 1.2;
+          lp.frequency.setValueAtTime(kind === 'sax' ? 900 : 700, t0); lp.frequency.exponentialRampToValueAtTime(kind === 'sax' ? 2600 : 3800, t0 + .08); lp.frequency.exponentialRampToValueAtTime(kind === 'sax' ? 1900 : 2600, t0 + .4);
+          (kind === 'sax' ? [osc('sawtooth', 1, 0, .6), osc('square', 1, 3, .25)] : [osc('sawtooth', 1, -3, .5), osc('sawtooth', 1, 3, .5)]).forEach(n => n.connect(lp));
+          if (kind === 'sax') { const [b, x] = bp(1300, 1.2, 1.2); lp.connect(b); chain = x; } else chain = lp;
+        } else if (kind === 'organ') {
+          const mix = ctx.createGain(); [[1, .5], [2, .3], [3, .15], [4, .12], [.5, .25]].forEach(([k, a]) => { const o = ctx.createOscillator(); o.frequency.value = f0 * k; const x = ctx.createGain(); x.gain.value = a; o.connect(x); x.connect(mix); nodes.push(o); }); chain = mix;
+        } else {
+          const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = kind === 'drone' ? 700 : 900;
+          (kind === 'drone' ? [osc('sawtooth', 1, -4, .4), osc('sawtooth', 1, 4, .4)] : [osc('sine', 1, 0, .7), osc('triangle', 2, 0, .1)]).forEach(n => n.connect(lp)); chain = lp;
+        }
+        chain.connect(g); g.connect(og);
+        const A = { violin: .07, cello: .1, strings: .45, morin: .09, erhu: .08, dizi: .05, flute: .06, voice: .18, choir: .7, throat: .4, pad: .5, sub: .3, drone: .6, trumpet: .04, sax: .05, organ: .02 }[kind] || .1;
+        const R = { strings: .8, choir: 1.2, voice: .5, pad: .9, drone: .8, throat: 1, organ: .15 }[kind] || .25;
+        const end = env(g, t0, A, 1, .2, kind === 'organ' ? 1 : .85, R, t1);
+        out(og, ['choir', 'voice', 'pad', 'strings', 'organ'].includes(kind) ? 1.4 : 1);
+        nodes.forEach(n => { n.start(t0); n.stop(end + .05); }); track(nodes, og, end);
+      }
+      function piano(midi, t0, dur, vel) {
+        const f = hz(midi), g = ctx.createGain(), lp = ctx.createBiquadFilter(); lp.type = 'lowpass';
+        lp.frequency.setValueAtTime(Math.min(9000, f * 9), t0); lp.frequency.exponentialRampToValueAtTime(Math.max(700, f * 2.2), t0 + 1.4);
+        g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(vel, t0 + .006); g.gain.exponentialRampToValueAtTime(vel * .3, t0 + .25);
+        const end = t0 + Math.max(dur, .3) + .5; g.gain.exponentialRampToValueAtTime(.0001, end); lp.connect(g); out(g, .8);
+        const nodes = [[1, 'triangle', .55], [2, 'sine', .22], [3, 'sine', .09]].map(([k, type, amp]) => { const o = ctx.createOscillator(), x = ctx.createGain(); o.type = type; o.frequency.value = f * k; x.gain.value = amp; o.connect(x); x.connect(lp); o.start(t0); o.stop(end + .05); return o; });
+        track(nodes, g, end);
+      }
+      function mallet(kind, midi, t0, vel) {                    // 铃、八音盒、马林巴
+        const g = ctx.createGain(), f = hz(midi), nodes = [];
+        const P = kind === 'marimba' ? [[1, 1], [4, .25], [10, .05]] : kind === 'musicbox' ? [[1, 1], [3, .35], [6.2, .15]] : [[1, 1], [2.76, .4], [5.4, .2]];
+        const len = kind === 'marimba' ? .8 : kind === 'musicbox' ? 1.6 : 2.5;
+        P.forEach(([k, a]) => { const o = ctx.createOscillator(); o.frequency.value = f * k; const x = ctx.createGain(); x.gain.setValueAtTime(a, t0); x.gain.exponentialRampToValueAtTime(.0001, t0 + len / k * 1.5); o.connect(x); x.connect(g); nodes.push(o); });
+        g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(vel, t0 + .004); g.gain.exponentialRampToValueAtTime(.0001, t0 + len); out(g, kind === 'marimba' ? .6 : 1.4);
+        nodes.forEach(n => { n.start(t0); n.stop(t0 + len + .05); }); track(nodes, g, t0 + len);
+      }
+      function drum(kind, t0, vel, midi) {
+        const g = ctx.createGain(), nodes = []; let end = t0 + .4;
+        if (kind === 'kick' || kind === 'bigdrum' || kind === 'timpani') {
+          const o = ctx.createOscillator(); const [f1, f2, len] = kind === 'kick' ? [120, 45, .35] : kind === 'bigdrum' ? [95, 48, .6] : [hz(midi || 43) * 1.5, hz(midi || 43), 1.2];
+          o.frequency.setValueAtTime(f1, t0); o.frequency.exponentialRampToValueAtTime(f2, t0 + len * .5);
+          g.gain.setValueAtTime(vel, t0); g.gain.exponentialRampToValueAtTime(.0001, t0 + len); end = t0 + len; o.connect(g); nodes.push(o);
+          if (kind !== 'kick') { const n = noise(), b = ctx.createBiquadFilter(); b.type = 'bandpass'; b.frequency.value = kind === 'timpani' ? 180 : 250; const ng = ctx.createGain(); ng.gain.setValueAtTime(vel * .4, t0); ng.gain.exponentialRampToValueAtTime(.0001, t0 + .15); n.connect(b); b.connect(ng); ng.connect(g); nodes.push(n); }
+        } else {
+          const n = noise(), f = ctx.createBiquadFilter(); const [type, fr, len] = { snare: ['bandpass', 1800, .18], hat: ['highpass', 7000, .05], frame: ['bandpass', 420, .12] }[kind];
+          f.type = type; f.frequency.value = fr; if (kind === 'frame') f.Q.value = 2.5;
+          g.gain.setValueAtTime(vel * (kind === 'hat' ? .5 : 1), t0); g.gain.exponentialRampToValueAtTime(.0001, t0 + len); end = t0 + len; n.connect(f); f.connect(g); nodes.push(n);
+          if (kind === 'snare' || kind === 'frame') { const o = ctx.createOscillator(); o.frequency.value = kind === 'snare' ? 190 : 150; const x = ctx.createGain(); x.gain.setValueAtTime(vel * .5, t0); x.gain.exponentialRampToValueAtTime(.0001, t0 + .08); o.connect(x); x.connect(g); nodes.push(o); }
+        }
+        out(g, .5); nodes.forEach(n => { n.start(t0); n.stop(end + .05); }); track(nodes, g, end);
+      }
+      function play(ev, when) {
+        const d = ev.dur / 1000, v = ev.vel;
+        switch (ev.inst) {
+          case 'piano': return piano(ev.midi, when, d, v * .9);
+          case 'guzheng': return pluck('guzheng', ev.midi, when, d, v, d > 1.2 && v > .8);
+          case 'pipa': if (d > .9 && v > .5) { for (let x = 0; x < d - .1; x += .075) pluck('pipa', ev.midi, when + x, .1, v * .5); return; } return pluck('pipa', ev.midi, when, d, v);
+          case 'guqin': case 'harp': case 'aguitar': case 'eguitar': case 'ebass': return pluck(ev.inst, ev.midi, when, d, v);
+          case 'kick': case 'snare': case 'hat': case 'frame': case 'bigdrum': case 'timpani': return drum(ev.inst, when, v, ev.midi);
+          case 'bell': case 'musicbox': case 'marimba': return mallet(ev.inst, ev.midi, when, v);
+          default: return sustained(ev.inst, ev.midi, when, d, v * .6);
+        }
+      }
+      const hush = () => { const now = ctx.currentTime; voices.forEach(v => { try { v.g.gain.cancelScheduledValues(now); v.g.gain.setTargetAtTime(.0001, now, .04); v.nodes.forEach(n => { try { n.stop(now + .2); } catch (_) {} }); } catch (_) {} }); voices.clear(); };
+      return { play, hush, setRev: r => { wet.gain.value = r; } };
+    }
+
+    /* ---------- 设置与曲库 ---------- */
+    const CFG_KEY = 'lili-music-cfg';
+    const DEF_COVER = 'https://s1.oururl.cn/autoupload/cgoqf/20260928/HUzG/1024X1024/e9e17774bfc7bd37f411ae1d61e0e1de1532c50bc2b15a0a7b3e4de3f437e41f.0.PNG';
+    const MODES = [['loop', '列表循环'], ['order', '顺序播放'], ['reverse', '倒序播放'], ['shuffle', '随机播放'], ['one', '单曲循环']];
+    const ICON_PATH = {
+      prev: 'M6 5v14M18 5.5L8.5 12l9.5 6.5z', next: 'M18 5v14M6 5.5L15.5 12 6 18.5z',
+      play: 'M7.5 4.8L19 12 7.5 19.2z', pause: 'M9 5v14M15 5v14', list: 'M4 6.5h16M4 12h16M4 17.5h10',
+      vol: 'M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11',
+      loop: 'M4 11V9a3 3 0 0 1 3-3h11M15 3l3 3-3 3M20 13v2a3 3 0 0 1-3 3H6M9 21l-3-3 3-3',
+      order: 'M4 12h14M14 7l5 5-5 5', reverse: 'M20 12H6M10 7l-5 5 5 5',
+      shuffle: 'M3 7h4l10 10h4M17 14l3 3-3 3M3 17h4l3-3M14 10l3-3h4M17 4l3 3-3 3',
+      one: 'M4 11V9a3 3 0 0 1 3-3h11M15 3l3 3-3 3M20 13v2a3 3 0 0 1-3 3H6M9 21l-3-3 3-3M11 10.2l1.4-1v5.6',
+      close: 'M6 6l12 12M18 6L6 18', up: 'M6 15l6-6 6 6', down: 'M6 9l6 6 6-6', more: 'M5 12h.01M12 12h.01M19 12h.01',
+      heart: 'M12 20s-7.5-4.6-9.2-9.3C1.6 7.4 3.8 4.5 6.9 4.5c2 0 3.6 1.2 5.1 3 1.5-1.8 3.1-3 5.1-3 3.1 0 5.3 2.9 4.1 6.2C19.5 15.4 12 20 12 20z',
+      lyric: 'M4 6h10M4 10h10M4 14h6M20 5v12M16 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0', fold: 'M5 12h14', lock: 'M7 11V8a5 5 0 0 1 10 0v3M5.5 11h13v9h-13z',
+      gear: 'M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4', pip: 'M3.5 5.5h17v13h-17zM12 12h6.5v4.5H12z',
+      disc: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z'
+    };
+    const icon = (n, cls = '') => '<svg class="lm-i ' + cls + '" viewBox="0 0 24 24" aria-hidden="true"><path d="' + ICON_PATH[n] + '"/></svg>';
+    const mc = Object.assign({
+      playlists: [{ id: 'fav', name: '我喜欢', items: [] }, { id: 'mine', name: '我的音乐', items: [] }],
+      mode: 'loop', volume: .8, bg: true, fab: true, fabPos: null, cover: '', perSong: {}, cur: null, view: 'fav',
+      fabSize: 60, miniOpacity: .9, glass: true, blur: 14
+    }, read(CFG_KEY, {}));
+    if (!mc.playlists.some(p => p.id === 'fav')) mc.playlists.unshift({ id: 'fav', name: '我喜欢', items: [] });
+    if (!mc.playlists.some(p => p.id === 'mine')) mc.playlists.splice(1, 0, { id: 'mine', name: '我的音乐', items: [] });
+    let dlDraftBase = null;   // v3.8：桌面歌词设置打开时，未点保存的样式不写进存储
+    const saveMc = () => { try { W.localStorage.setItem(CFG_KEY, JSON.stringify(dlDraftBase ? { ...mc, dl: dlDraftBase } : mc)); } catch { notice('音乐设置没保存上：浏览器存储空间不足。'); } };
+    /* 只在内容真的变了才写 DOM，避免每 250ms 整块重写引起卡顿 */
+    const patch = (el, k, v) => { if (!el || el['_lm_' + k] === v) return; el['_lm_' + k] = v; if (k === 'text') el.textContent = v; else if (k === 'html') el.innerHTML = v; else if (k === 'bg') el.style.backgroundImage = v; else if (k === 'title') el.title = v; };
+    const LOAD_HTML = '<span class="lm-load" aria-hidden="true"><i></i><i></i><i></i></span>';
+    const bgOf = u => 'url("' + String(u).replace(/"/g, '%22') + '")';
+    const pl = id => mc.playlists.find(p => p.id === id);
+    const songs = new Map();
+    let dbp = null;
+    const db = () => dbp || (dbp = new Promise((res, rej) => {
+      const r = W.indexedDB.open('lili-music', 1);
+      r.onupgradeneeded = () => { const s = r.result.createObjectStore('songs', { keyPath: 'id' }); s.createIndex('order', 'order'); };
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    }));
+    const tx = async (mode, fn) => { const d = await db(); return new Promise((res, rej) => { const t = d.transaction('songs', mode); const q = fn(t.objectStore('songs')); t.oncomplete = () => res(q?.result); t.onerror = () => rej(t.error); }); };
+    const liked = r => r && r.kind !== 'audio' ? r.liked !== false : !!r?.liked;
+    async function loadSongs() {
+      let all = []; try { all = (await tx('readonly', s => s.getAll())) || []; } catch {}
+      songs.clear(); all.forEach(r => songs.set(r.id, r));
+      const fav = pl('fav');
+      const likedIds = all.filter(liked).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0)).map(r => r.id);
+      fav.items = fav.items.filter(id => likedIds.includes(id));
+      likedIds.forEach(id => { if (!fav.items.includes(id)) fav.items.unshift(id); });   // 状态栏里点小爱心的歌自动进「我喜欢」
+      mc.playlists.forEach(p => { p.items = p.items.filter(id => songs.has(id)); });
+      saveMc(); emit();
+    }
+    async function putSong(rec) { await tx('readwrite', s => s.put(rec)); songs.set(rec.id, rec); }
+    async function putSongs(records) { await tx('readwrite', store => records.forEach(r => store.put(r))); records.forEach(r => songs.set(r.id, r)); }
+    async function delSongs(ids) {
+      await tx('readwrite', s => ids.forEach(id => s.delete(id)));
+      ids.forEach(id => { songs.delete(id); if (urls.has(id)) { W.URL.revokeObjectURL(urls.get(id)); urls.delete(id); } });
+      mc.playlists.forEach(p => { p.items = p.items.filter(id => !ids.includes(id)); }); saveMc();
+      if (st.id && ids.includes(st.id)) stop();
+      notifyLib(); emit();
+    }
+    async function setLiked(id, on) {
+      const r = songs.get(id); if (!r) return;
+      r.liked = on; if (on) r.savedAt = Date.now();
+      await putSong(r);
+      const fav = pl('fav'); fav.items = fav.items.filter(x => x !== id); if (on) fav.items.unshift(id);
+      saveMc(); notifyLib(id); emit();
+    }
+    const notifyLib = id => { try { W.dispatchEvent(new W.CustomEvent('lili-music-changed', { detail: { action: 'workbench', id, from: 'workbench' } })); } catch {} };
+    const onLib = e => { if (e.detail?.from !== 'workbench') loadSongs(); };
+    W.addEventListener('lili-music-changed', onLib);
+    const urls = new Map();
+    const audioUrl = r => { if (r.url) return r.url; if (!urls.has(r.id)) urls.set(r.id, W.URL.createObjectURL(r.blob)); return urls.get(r.id); };
+    const newId = p => p + ':' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    /* LRC：[mm:ss.xx]歌词；同一时间出现的第二行当作翻译 */
+    function parseLrc(text) {
+      const map = new Map();
+      for (const raw of String(text || '').split(/\r?\n/)) {
+        const tags = [...raw.matchAll(/\[(\d{1,3}):(\d{1,2}(?:[.:]\d{1,3})?)\]/g)];
+        if (!tags.length) continue;
+        const words = raw.replace(/\[[^\]]*\]/g, '').trim();
+        for (const t of tags) {
+          const ms = Math.round((+t[1] * 60 + parseFloat(t[2].replace(':', '.'))) * 1000);
+          if (!map.has(ms)) map.set(ms, []);
+          map.get(ms).push(words);
+        }
+      }
+      return [...map.entries()].sort((a, b) => a[0] - b[0]).map(([start, arr]) => ({ start, text: arr[0] || '♪', trans: arr.slice(1).filter(Boolean).join(' / ') })).filter(l => l.text || l.trans);
+    }
+
+    /* ---------- 播放器（常驻） ---------- */
+    const listeners = new Set();
+    const emit = () => { listeners.forEach(fn => { try { fn(); } catch {} }); };
+    const st = { loading: false, id: null, plId: null, playing: false, pos: 0, total: 0, rec: null, model: null, arr: [], idx: 0, startAt: 0, timer: 0, tick: 0, line: -1, sleepAt: 0, sel: null };
+    let ac = null, eng = null, vol = null, audioEl = null;
+    function ensureCtx() {
+      if (!ac) { ac = new (W.AudioContext || W.webkitAudioContext)(); vol = ac.createGain(); vol.gain.value = mc.volume; vol.connect(ac.destination); eng = Engine(ac, true, vol); }
+      if (ac.state === 'suspended') ac.resume();
+    }
+    function ensureAudio() {
+      if (audioEl) return audioEl;
+      audioEl = new W.Audio(); audioEl.preload = 'metadata'; audioEl.volume = mc.volume;
+      audioEl.addEventListener('ended', () => onEnded());
+      audioEl.addEventListener('waiting', () => { if (st.playing && !st.loading) { st.loading = true; armLoadWatch(); emit(); } });
+      audioEl.addEventListener('playing', () => { failStreak = 0; W.clearTimeout(loadWatch); if (st.loading) { st.loading = false; emit(); } });
+      audioEl.addEventListener('timeupdate', () => { if (st.loading && audioEl.currentTime > lastWatchPos + 0.2) armLoadWatch(); });
+      audioEl.addEventListener('loadedmetadata', () => { st.total = (audioEl.duration || 0) * 1000; const r = songs.get(st.id); if (r && r.kind === 'audio' && !r.duration && isFinite(audioEl.duration)) { r.duration = audioEl.duration; putSong(r); } emit(); });
+      // v3.8.6：打不开就自动跳下一首，不再弹窗卡住
+      audioEl.addEventListener('error', () => {
+        const rec = st.rec;
+        if (rec?.kind !== 'audio' || !audioEl.getAttribute('src')) return;
+        if (st.playing || st.loading) failAndSkip(rec, '音频打不开');
+      });
+      return audioEl;
+    }
+    function selOf(r) { return mc.perSong[r.id]?.sel || r.sel || (r.kind === 'piano' ? { kind: 'raw' } : null); }
+    function load(id) {
+      const r = songs.get(id); if (!r) return false;
+      halt();
+      st.id = id; st.rec = r; st.pos = 0; st.line = -1; st.lyricStatus = '';
+      if (r.kind === 'audio') {
+        st.model = r.lrc ? { lines: parseLrc(r.lrc) } : null; st.arr = []; st.total = (r.duration || 0) * 1000;
+        const a = ensureAudio(); if (r.source === 'netease') { a.removeAttribute('src'); a.load(); } else a.src = audioUrl(r);
+      } else {
+        st.model = SongModel(r, mc.perSong[id]?.tempo);
+        st.sel = selOf(r) || st.model.guessSel();
+        st.arr = st.model.arrange(st.sel); st.total = st.model.total;
+      }
+      mc.cur = { id, pl: st.plId }; saveMc(); media(); return true;
+    }
+    function rearrange() { if (!st.rec || st.rec.kind === 'audio') return; const p = st.pos, was = st.playing; halt(); st.model = SongModel(st.rec, mc.perSong[st.id]?.tempo); st.sel = selOf(st.rec) || st.model.guessSel(); st.arr = st.model.arrange(st.sel); st.total = st.model.total; st.pos = Math.min(p, st.total); if (was) play(); emit(); }
+    const findIdx = () => { st.idx = st.arr.findIndex(e => e.t >= st.pos - 1); if (st.idx < 0) st.idx = st.arr.length; };
+    function schedule() {
+      if (!st.playing || !ac) return;
+      const now = ac.currentTime, horizon = (now - st.startAt) * 1000 + 250;
+      while (st.idx < st.arr.length && st.arr[st.idx].t < horizon) {
+        const ev = st.arr[st.idx++], when = st.startAt + ev.t / 1000;
+        if (when >= now - .03) eng.play(ev, Math.max(when, now));
+      }
+    }
+    function progress() {
+      if (!st.playing) return;
+      if (st.rec?.kind === 'audio') st.pos = (audioEl?.currentTime || 0) * 1000;
+      else if (ac) st.pos = (ac.currentTime - st.startAt) * 1000;
+      if (st.model) { let li = 0; const L = st.model.lines; while (li + 1 < L.length && L[li + 1].start <= st.pos + 1) li++; st.line = li; }
+      if (st.sleepAt && Date.now() >= st.sleepAt) { st.sleepAt = 0; pause(); notice('定时时间到，音乐已经停下了。'); return; }
+      if (st.rec?.kind !== 'audio' && st.pos >= st.total + 1500) { onEnded(); return; }
+      emit();
+    }
+    // 歌词独立于音频地址加载，失败后下次播放可重试；存储失败不阻断显示。
+    const lyricRequests = new Map();
+    function ensureLyrics(rec) {
+      if (rec.source !== 'netease' || parseLrc(rec.lrc).length) return;
+      if (lyricRequests.has(rec.id)) return lyricRequests.get(rec.id);
+      const request = NE.request('/lyric', { id: rec.neteaseId }).then(data => {
+        const body = data?.data?.lrc ? data.data : data;
+        const raw = body?.lrc?.lyric || body?.klyric?.lyric || '';
+        if (!raw) { if (st.rec === rec) { st.lyricStatus = body?.nolyric ? '纯音乐' : '暂无歌词'; emit(); } return; }
+        rec.lrc = raw + '\n' + (body?.tlyric?.lyric || '');
+        if (st.rec === rec) { st.model = { lines: parseLrc(rec.lrc) }; st.lyricStatus = ''; emit(); }
+        return putSong(rec).catch(e => console.warn('[梨梨工作台] 歌词缓存未保存', e));
+      }).catch(e => {
+        console.warn('[梨梨工作台] 歌词加载失败', e);
+        if (st.rec === rec) { st.lyricStatus = '歌词加载失败，暂停后播放可重试'; emit(); }
+      }).finally(() => lyricRequests.delete(rec.id));
+      lyricRequests.set(rec.id, request);
+      st.lyricStatus = '歌词加载中…';
+      return request;
+    }
+    let playRevision = 0;
+    /* v3.8.6：播放失败自动跳过。连续失败的首数达到整个歌单时停下，避免无限循环 */
+    let failStreak = 0, failRevision = -1, loadWatch = 0, lastWatchPos = 0;
+    const LOAD_STALL_MS = 15000;
+    function armLoadWatch() {
+      W.clearTimeout(loadWatch);
+      const rec = st.rec, revision = playRevision;
+      lastWatchPos = audioEl?.currentTime || 0;
+      loadWatch = W.setTimeout(() => {
+        if (st.rec === rec && revision === playRevision && st.loading) failAndSkip(rec, '加载太久没有声音');
+      }, LOAD_STALL_MS);
+    }
+    function failAndSkip(rec, reason) {
+      if (!rec || st.rec !== rec || failRevision === playRevision) return;
+      failRevision = playRevision;
+      W.clearTimeout(loadWatch);
+      st.loading = false; st.playing = false;
+      if (rec.source === 'netease') audioEl?.removeAttribute('src');
+      console.warn('[梨梨工作台] 播放失败，自动跳过：', rec.title, reason);
+      const q = queue(), name = '《' + (rec.title || '无题') + '》';
+      failStreak++;
+      if (q.length <= 1 || failStreak >= q.length) {
+        failStreak = 0; W.clearInterval(st.tick); emit();
+        topTip(q.length <= 1 ? name + '放不了：' + reason : '这个歌单里的歌暂时都放不了，已经停下', 3600);
+        return;
+      }
+      topTip(name + '放不了，已跳到下一首');
+      emit();
+      W.setTimeout(() => { if (st.rec === rec && !st.playing) step(1, true, true); }, 300);
+    }
+    async function play() {
+      if (!st.rec) { const q = queue(); if (!q.length) { notice('这个歌单还没有歌。'); return; } load(q[0]); }
+      const revision = ++playRevision, rec = st.rec;
+      if (rec.kind === 'audio') {
+        try {
+          const a = ensureAudio();
+          ensureLyrics(rec);
+          st.loading = true; armLoadWatch(); emit();
+          if (rec.source === 'netease' && !a.getAttribute('src')) {
+            const url = await NE.resolve(rec);
+            if (revision !== playRevision || st.rec !== rec) return;
+            a.src = url;
+          }
+          await a.play();
+          if (revision !== playRevision || st.rec !== rec) return;
+          W.clearTimeout(loadWatch); failStreak = 0;
+          st.loading = false; st.playing = true; emit();
+        } catch (e) {
+          if (revision !== playRevision) return;
+          W.clearTimeout(loadWatch);
+          // 浏览器拦截自动播放（需要点一下）不是歌坏了，跳过也没用，照旧提示
+          if (e?.name === 'NotAllowedError') { st.loading = false; st.playing = false; topTip('浏览器拦住了自动播放，点一下播放就好', 3200); emit(); return; }
+          failAndSkip(rec, e?.message || '播放失败');
+          return;
+        }
+      }
+      else {
+        ensureCtx(); eng.setRev(st.sel?.kind === 'raw' ? .22 : selRev(st.sel));
+        if (st.pos >= st.total) st.pos = 0;
+        st.startAt = ac.currentTime + .06 - st.pos / 1000; findIdx();
+        W.clearInterval(st.timer); st.timer = W.setInterval(schedule, 40); schedule();
+        st.playing = true;
+      }
+      W.clearInterval(st.tick); st.tick = W.setInterval(progress, 250);
+      media(); emit();
+    }
+    function halt() { playRevision++; W.clearTimeout(loadWatch); st.loading = false; st.playing = false; W.clearInterval(st.timer); W.clearInterval(st.tick); eng?.hush(); audioEl?.pause(); }
+    function pause() { if (st.rec?.kind === 'audio') st.pos = (audioEl?.currentTime || 0) * 1000; halt(); emit(); }
+    function stop() { halt(); st.id = null; st.rec = null; st.model = null; st.arr = []; st.pos = 0; st.total = 0; emit(); }
+    function toggle() { st.playing ? pause() : play(); }
+    function seek(ms) {
+      st.pos = Math.max(0, Math.min(st.total || 0, ms));
+      if (st.rec?.kind === 'audio') { if (audioEl) audioEl.currentTime = st.pos / 1000; }
+      else if (st.playing) { eng.hush(); st.startAt = ac.currentTime + .04 - st.pos / 1000; findIdx(); schedule(); }
+      if (st.model) { let li = 0; const L = st.model.lines; while (li + 1 < L.length && L[li + 1].start <= st.pos + 1) li++; st.line = li; }
+      emit();
+    }
+    function queue() { return (pl(st.plId || mc.view)?.items || []).filter(id => songs.has(id)); }
+    function step(dir, auto, skipping) {
+      const q = queue(); if (!q.length) { stop(); return; }
+      let i = q.indexOf(st.id);
+      if (mc.mode === 'shuffle' && q.length > 1) { let j; do { j = Math.floor(Math.random() * q.length); } while (j === i); i = j; }
+      else if (auto && mc.mode === 'one' && !skipping) { /* 同一首 */ }
+      else {
+        const d = mc.mode === 'reverse' ? -dir : dir;
+        i = i < 0 ? 0 : i + d;
+        if (i >= q.length || i < 0) {
+          if (auto && (mc.mode === 'order' || mc.mode === 'reverse')) { pause(); seek(0); return; }
+          i = (i + q.length) % q.length;
+        }
+      }
+      load(q[i]); play();
+    }
+    function onEnded() { failStreak = 0; step(1, true); }
+    function playAt(plId, id) { st.plId = plId; if (load(id)) play(); }
+    function setMode(m) { mc.mode = m; saveMc(); emit(); }
+    function setVolume(v) { mc.volume = v; if (vol) vol.gain.value = v; if (audioEl) audioEl.volume = v; saveMc(); }
+    function sleepIn(min) { st.sleepAt = min ? Date.now() + min * 60000 : 0; emit(); }
+    const lyricsNow = () => st.model?.lines || [];
+    function media() {
+      const ms = W.navigator.mediaSession; if (!ms || !st.rec) return;
+      try {
+        ms.metadata = new W.MediaMetadata({ title: st.rec.title || '无题', artist: st.rec.artist || '', album: '梨梨的音乐', artwork: [{ src: mc.cover || DEF_COVER, sizes: '512x512' }] });
+        ms.setActionHandler('play', play); ms.setActionHandler('pause', pause);
+        ms.setActionHandler('previoustrack', () => step(-1)); ms.setActionHandler('nexttrack', () => step(1));
+      } catch {}
+    }
+    const fmt = ms => { const s = Math.max(0, Math.round((ms || 0) / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+
+    /* ---------- 复制歌词 ---------- */
+    function copyLyrics(lines, rec) {
+      const r = rec || st.rec || {};
+      const text = lines.filter(l => l.text && !/^[（(].*[)）]$/.test(l.text)).map(l => l.text + (l.trans ? '\n' + l.trans : '')).join('\n') + '\n—— 《' + (r.title || '无题') + '》 · ' + (r.artist || '');
+      copyText(text).then(ok => notice(ok ? '歌词已复制。' : '复制失败，请手动选择歌词。'));
+    }
+
+    /* ---------- 导入 / 导出 ---------- */
+    async function importAudioFiles(files, plId) {
+      let n = 0;
+      const lrcs = new Map();                                   // 同名 .lrc 自动配上歌词
+      for (const f of files) if (/\.lrc$/i.test(f.name)) lrcs.set(f.name.replace(/\.[^.]+$/, '').toLowerCase(), await f.text());
+      for (const f of files) {
+        if (!/^audio\//.test(f.type) && !/\.(mp3|m4a|aac|wav|ogg|flac|opus|webm)$/i.test(f.name)) continue;
+        const base = f.name.replace(/\.[^.]+$/, ''), m = base.split(/\s+-\s+/);
+        const rec = { id: newId('audio'), kind: 'audio', title: m.length > 1 ? m.slice(1).join(' - ') : base, artist: m.length > 1 ? m[0] : '', blob: f, liked: plId === 'fav', savedAt: Date.now() };
+        const lrc = lrcs.get(base.toLowerCase()); if (lrc) rec.lrc = lrc;
+        await putSong(rec); addTo(plId, [rec.id]); n++;
+      }
+      return n;
+    }
+    async function importLinks(text, plId) {
+      let n = 0;
+      for (const line of String(text || '').split(/\n+/).map(s => s.trim()).filter(Boolean)) {
+        const [url, ...rest] = line.split(/\s+/);
+        if (!/^https?:\/\//i.test(url)) continue;
+        const title = rest.join(' ') || decodeURIComponent(url.split('/').pop().replace(/\?.*$/, '').replace(/\.[^.]+$/, '')) || '链接音频';
+        const rec = { id: newId('audio'), kind: 'audio', title, artist: '', url, liked: plId === 'fav', savedAt: Date.now() };
+        await putSong(rec); addTo(plId, [rec.id]); n++;
+      }
+      return n;
+    }
+    const blobToData = b => new Promise(res => { const r = new W.FileReader(); r.onload = () => res(r.result); r.readAsDataURL(b); });
+    async function exportSongs(ids, name, withAudio) {
+      const out = [];
+      for (const id of ids) {
+        const r = songs.get(id); if (!r) continue;
+        const c = { ...r }; delete c.blob;
+        if (r.blob && withAudio) c.data = await blobToData(r.blob);
+        if (r.blob && !withAudio) continue;
+        c.perSong = mc.perSong[id] || null; out.push(c);
+      }
+      const blob = new W.Blob([JSON.stringify({ format: 'lili-music', version: 1, name, songs: out }, null, 1)], { type: 'application/json' });
+      const a = DOC.createElement('a'); a.href = W.URL.createObjectURL(blob); a.download = (name || '歌单') + '.lili-music.json'; DOC.body.append(a); a.click();
+      W.setTimeout(() => { W.URL.revokeObjectURL(a.href); a.remove(); }, 30000);
+      return out.length;
+    }
+    async function importListFile(file, plId) {
+      const data = JSON.parse(await file.text());
+      const list = Array.isArray(data) ? data : data.songs;
+      if (!Array.isArray(list)) throw new Error('不是梨梨的歌单文件');
+      const ids = [];
+      for (const s of list) {
+        if (!s || !s.id || !s.kind) continue;
+        const rec = { ...s }; delete rec.perSong; delete rec.data;
+        if (s.data) rec.blob = await (await W.fetch(s.data)).blob();
+        if (rec.kind === 'audio' && !rec.blob && !rec.url && !(rec.source === 'netease' && /^\d+$/.test(rec.neteaseId))) continue;
+        rec.liked = plId === 'fav' ? true : (songs.get(rec.id)?.liked ?? rec.liked ?? false);
+        await putSong(rec); if (s.perSong) mc.perSong[rec.id] = s.perSong; ids.push(rec.id);
+      }
+      addTo(plId, ids); return ids.length;
+    }
+    function addTo(plId, ids) {
+      const p = pl(plId); if (!p) return;
+      ids.forEach(id => { if (!p.items.includes(id)) p.items.push(id); });
+      if (plId === 'fav') ids.forEach(id => { const r = songs.get(id); if (r && !r.liked) { r.liked = true; putSong(r); } });
+      saveMc(); notifyLib(); emit();
+    }
+    function removeFrom(plId, ids) {
+      const p = pl(plId); if (!p) return;
+      p.items = p.items.filter(id => !ids.includes(id));
+      if (plId === 'fav') ids.forEach(id => { const r = songs.get(id); if (r) { r.liked = false; putSong(r); } });
+      saveMc(); notifyLib(); emit();
+    }
+
+    /* ---------- 悬浮唱片 ---------- */
+    const fabCss = node('style'); fabCss.id = 'lm-style';
+    fabCss.textContent = `
+.lm-i{width:1.25em;height:1.25em;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.22em;pointer-events:none}
+.lm-i.fill{fill:currentColor}
+.lm-i.dots{stroke-width:3.2}
+#lm-fab{position:fixed;z-index:2147482990;width:var(--lm-fab,60px);height:var(--lm-fab,60px);cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent}
+#lm-fab .lm-vinyl{position:absolute;inset:0;border-radius:50%;background:repeating-radial-gradient(circle at 50% 50%,#1b1b1b 0 1.2px,#2a2a2a 1.2px 2.4px);box-shadow:0 4px 14px rgba(0,0,0,.35),inset 0 0 0 2px #111}
+#lm-fab::after{content:'';position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 30deg,transparent 0 40deg,rgba(255,255,255,.14) 50deg,transparent 70deg 220deg,rgba(255,255,255,.1) 230deg,transparent 250deg);pointer-events:none}
+#lm-fab .lm-label{position:absolute;inset:13%;border-radius:50%;background:#ddd center/cover no-repeat;box-shadow:0 0 0 1px #0d0d0d}
+#lm-fab.spin .lm-vinyl,.lm-disc.spin{animation:lm-spin 6s linear infinite}
+@keyframes lm-spin{to{transform:rotate(360deg)}}
+#lm-fab .lm-arm{position:absolute;right:-7%;top:-10%;width:33%;height:57%;border-right:3px solid #c9c9c9;border-top:3px solid #c9c9c9;border-radius:0 10px 0 0;transform-origin:100% 0;transform:rotate(-18deg);transition:transform .4s;pointer-events:none}
+#lm-fab.spin .lm-arm{transform:rotate(6deg)}
+#lm-mini{position:fixed;z-index:2147482991;width:min(92vw,340px);max-height:min(78vh,560px);display:flex;flex-direction:column;overflow:hidden;
+  color:var(--SmartThemeBodyColor,#222);background:color-mix(in srgb,var(--SmartThemeBlurTintColor,#fff) calc(var(--lm-op,.9) * 100%),transparent);
+  -webkit-backdrop-filter:blur(var(--lm-blur,14px));backdrop-filter:blur(var(--lm-blur,14px));
+  border:1px solid color-mix(in srgb,var(--SmartThemeBodyColor,#888) 45%,transparent);box-shadow:0 10px 30px rgba(0,0,0,.3);font:13px/1.5 var(--mainFontFamily,serif)}
+#lm-mini[hidden]{display:none!important}
+.lm-mini-hd{display:flex;align-items:center;gap:12px;padding:12px 12px 6px}
+.lm-disc{position:relative;flex:none;width:68px;height:68px;border-radius:50%;background:repeating-radial-gradient(circle,#1b1b1b 0 1.2px,#2a2a2a 1.2px 2.4px);box-shadow:inset 0 0 0 2px #111}
+.lm-disc .lm-label{position:absolute;inset:13%;border-radius:50%;background:#ddd center/cover no-repeat;box-shadow:0 0 0 1px #0d0d0d}
+.lm-mini-t{min-width:0;flex:1}
+.lm-mini-t b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lm-mini-t span{font-size:12px;opacity:.7}
+.lm-x{display:grid;place-items:center;border:0;background:none;color:inherit;font-size:16px;cursor:pointer;opacity:.7;align-self:flex-start;padding:4px}
+.lm-seek{display:flex;align-items:center;gap:8px;padding:0 12px;font:11px ui-monospace,Consolas,monospace;opacity:.9}
+.lm-seek input,.lm-vol input{flex:1;accent-color:var(--SmartThemeQuoteColor,currentColor)}
+.lm-ctl{display:flex;justify-content:space-around;align-items:center;padding:4px 8px 8px}
+.lm-ctl button{display:grid;place-items:center;width:40px;height:40px;padding:0;border:0;background:none;color:inherit;font-size:18px;cursor:pointer;border-radius:50%}
+.lm-ctl button.big{font-size:26px}
+.lm-ctl button:active{background:color-mix(in srgb,currentColor 12%,transparent)}
+.lm-lyr{flex:1;min-height:60px;overflow:auto;padding:4px 12px;border-top:1px solid color-mix(in srgb,currentColor 18%,transparent);scrollbar-width:none}
+.lm-lyr::-webkit-scrollbar{display:none}
+.lm-ln{padding:4px 6px;border-radius:8px;opacity:.55;cursor:pointer}
+.lm-ln small{display:block;font-size:11.5px;opacity:.8}
+.lm-ln.now{opacity:1;font-weight:600}
+.lm-ln.pick{opacity:1;background:color-mix(in srgb,currentColor 10%,transparent);box-shadow:inset 3px 0 0 currentColor}
+.lm-lyr-bar{display:flex;gap:6px;justify-content:flex-end;padding:6px 12px 10px}
+.lm-lyr-bar button,.lm-mini-foot button{padding:3px 10px;border:1px solid color-mix(in srgb,currentColor 40%,transparent);background:none;color:inherit;font:inherit;font-size:12px;cursor:pointer}
+.lm-empty{padding:16px;text-align:center;opacity:.7}
+.lm-load{display:inline-flex;align-items:center;justify-content:center;gap:3px;height:1em;pointer-events:none}
+.lm-load i{display:block;width:5px;height:5px;border-radius:50%;background:currentColor;animation:lm-load .9s ease-in-out infinite;will-change:transform,opacity}
+.lm-load i:nth-child(2){animation-delay:.12s}.lm-load i:nth-child(3){animation-delay:.24s}
+@keyframes lm-load{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-4px);opacity:1}}
+#lm-fab.loading .lm-label{animation:lm-pulse .9s ease-in-out infinite alternate}
+@keyframes lm-pulse{to{opacity:.45}}
+#lm-mini .lm-ctl button.off{opacity:.42}
+@media(prefers-reduced-motion:reduce){.lm-load i,#lm-fab.loading .lm-label{animation:none}}
+`;
+    DOC.head.append(fabCss);
+    let fabEl = null, miniEl = null, picked = new Set(), miniLine = -2, miniLyrics = null, miniStatus = '';
+    const coverUrl = () => mc.cover || DEF_COVER;
+    function renderFab() {
+      if (!mc.fab) { fabEl?.remove(); miniEl?.remove(); fabEl = miniEl = null; return; }
+      if (!fabEl) {
+        fabEl = node('div'); fabEl.id = 'lm-fab'; fabEl.title = '梨梨的唱片机（点开播放器，拖动换位置）';
+        const vinyl = node('div', 'lm-vinyl'); vinyl.append(node('div', 'lm-label'));
+        fabEl.append(vinyl, node('div', 'lm-arm'));
+        let drag = null;
+        fabEl.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, l: fabEl.offsetLeft, t: fabEl.offsetTop, moved: false }; try { fabEl.setPointerCapture(e.pointerId); } catch {} });
+        fabEl.addEventListener('pointermove', e => {
+          if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+          if (Math.abs(dx) + Math.abs(dy) > 6) drag.moved = true;
+          if (drag.moved) { const fs = fabEl.offsetWidth; fabEl.style.left = Math.max(0, Math.min(W.innerWidth - fs, drag.l + dx)) + 'px'; fabEl.style.top = Math.max(0, Math.min(W.innerHeight - fs, drag.t + dy)) + 'px'; }
+        });
+        fabEl.addEventListener('pointerup', () => {
+          if (!drag) return; const moved = drag.moved; drag = null;
+          if (moved) { mc.fabPos = { x: fabEl.offsetLeft / W.innerWidth, y: fabEl.offsetTop / W.innerHeight }; saveMc(); placeMini(); }
+          else toggleMini();
+        });
+        DOC.body.append(fabEl);
+      }
+      applyLook();
+      const p = mc.fabPos || { x: .82, y: .62 };
+      const fs = Math.max(36, Math.min(120, +mc.fabSize || 60));
+      fabEl.style.left = Math.round(Math.max(0, Math.min(W.innerWidth - fs, p.x * W.innerWidth))) + 'px';
+      fabEl.style.top = Math.round(Math.max(0, Math.min(W.innerHeight - fs, p.y * W.innerHeight))) + 'px';
+      patch(fabEl.querySelector('.lm-label'), 'bg', bgOf(coverUrl()));
+      fabEl.classList.toggle('spin', st.playing);
+      fabEl.classList.toggle('loading', st.loading);
+    }
+    function applyLook() {
+      const size = Math.max(36, Math.min(120, +mc.fabSize || 60));
+      DOC.documentElement.style.setProperty('--lm-fab', size + 'px');
+      DOC.documentElement.style.setProperty('--lm-op', String(Math.max(.2, Math.min(1, +mc.miniOpacity || .9))));
+      DOC.documentElement.style.setProperty('--lm-blur', (mc.glass ? Math.max(0, Math.min(30, +mc.blur || 14)) : 0) + 'px');
+    }
+    function toggleMini(force) {
+      const show = force ?? (!miniEl || miniEl.hidden);
+      if (!show) { if (miniEl) miniEl.hidden = true; return; }
+      if (!miniEl) buildMini();
+      miniEl.hidden = false; miniLine = -2; paintMini(true); placeMini();
+    }
+    function placeMini() {
+      if (!miniEl || miniEl.hidden || !fabEl) return;
+      const r = fabEl.getBoundingClientRect(), w = miniEl.offsetWidth, h = miniEl.offsetHeight;
+      let left = r.left + r.width / 2 - w / 2, top = r.top - h - 10;
+      if (top < 8) top = r.bottom + 10;
+      left = Math.max(8, Math.min(W.innerWidth - w - 8, left)); top = Math.max(8, Math.min(W.innerHeight - h - 8, top));
+      miniEl.style.left = left + 'px'; miniEl.style.top = top + 'px';
+    }
+    function buildMini() {
+      miniEl = node('div'); miniEl.id = 'lm-mini'; miniEl.setAttribute('role', 'dialog'); miniEl.setAttribute('aria-label', '音乐播放器');
+      miniEl.innerHTML = `<div class="lm-mini-hd"><div class="lm-disc"><div class="lm-label"></div></div><div class="lm-mini-t"><b></b><span></span></div><button type="button" class="lm-x" title="收起">${icon('close')}</button></div>
+<div class="lm-seek"><span class="a">0:00</span><input type="range" min="0" max="1000" value="0" aria-label="进度"><span class="b">0:00</span></div>
+<div class="lm-ctl"><button type="button" class="md" title="播放模式"></button><button type="button" class="pv" title="上一首">${icon('prev')}</button><button type="button" class="pp big" title="播放 / 暂停">${icon('play')}</button><button type="button" class="nx" title="下一首">${icon('next')}</button><button type="button" class="dl" title="桌面歌词">${icon('lyric')}</button><button type="button" class="ls" title="打开音乐工作台">${icon('list')}</button></div>
+<div class="lm-lyr"></div><div class="lm-lyr-bar"><button type="button" class="ex">复制选中歌词</button><button type="button" class="cl">清除选择</button></div>`;
+      const $ = s => miniEl.querySelector(s);
+      $('.lm-x').onclick = () => toggleMini(false);
+      $('.pp').onclick = toggle; $('.pv').onclick = () => step(-1); $('.nx').onclick = () => step(1);
+      $('.md').onclick = () => { const i = MODES.findIndex(m => m[0] === mc.mode); setMode(MODES[(i + 1) % MODES.length][0]); };
+      $('.ls').onclick = () => { toggleMini(false); openHub('music'); };
+      $('.dl').onclick = () => dlSet({ on: !mc.dl.on, folded: false });
+      const rg = $('.lm-seek input'); let dragging = false;
+      rg.addEventListener('input', () => { dragging = true; $('.lm-seek .a').textContent = fmt(rg.value / 1000 * st.total); });
+      rg.addEventListener('change', () => { dragging = false; seek(rg.value / 1000 * st.total); });
+      rg._dragging = () => dragging;
+      $('.ex').onclick = () => { const L = lyricsNow(); const sel = [...picked].sort((a, b) => a - b).map(i => L[i]).filter(Boolean); copyLyrics(sel.length ? sel : L); };
+      $('.cl').onclick = () => { picked.clear(); miniLine = -2; paintMini(true); };
+      DOC.body.append(miniEl);
+    }
+    function paintMini(full) {
+      renderFab();
+      if (!miniEl || miniEl.hidden) return;
+      const $ = s => miniEl.querySelector(s), r = st.rec;
+      patch($('.lm-mini-t b'), 'text', r?.title || '还没有在放歌');
+      patch($('.lm-mini-t span'), 'text', st.loading ? '加载中…' : r ? (r.artist || '') + (r.kind === 'audio' ? '' : ' · ' + (st.sel?.kind === 'raw' ? '钢琴' : selName(st.sel || {}))) : '点右下角的列表去选歌');
+      patch($('.lm-disc .lm-label'), 'bg', bgOf(coverUrl()));
+      $('.lm-disc').classList.toggle('spin', st.playing);
+      patch($('.pp'), 'html', st.loading ? LOAD_HTML : icon(st.playing ? 'pause' : 'play'));
+      patch($('.pp'), 'title', st.loading ? '加载中' : '播放 / 暂停');
+      const m = MODES.find(x => x[0] === mc.mode); patch($('.md'), 'html', icon(m[0])); patch($('.md'), 'title', m[1]);
+      $('.dl').classList.toggle('off', !mc.dl.on);
+      const rg = $('.lm-seek input');
+      if (!rg._dragging?.()) { const v = String(st.total ? Math.round(st.pos / st.total * 1000) : 0); if (rg.value !== v) rg.value = v; patch($('.lm-seek .a'), 'text', fmt(st.pos)); }
+      patch($('.lm-seek .b'), 'text', fmt(st.total));
+      const box = $('.lm-lyr'), L = lyricsNow();
+      if (full || miniLine === -2 || miniLyrics !== st.model?.lines || miniStatus !== st.lyricStatus) {
+        miniLyrics = st.model?.lines; miniStatus = st.lyricStatus;
+        box.textContent = '';
+        if (!L.length) box.append(node('div', 'lm-empty', r?.kind === 'audio' ? st.lyricStatus || '这首还没有歌词，可以在音乐页「更多」里给它配一个 .lrc 文件' : '选一首歌开始吧'));
+        L.forEach((l, i) => {
+          const d = node('div', 'lm-ln' + (picked.has(i) ? ' pick' : ''), l.text || '♪');
+          if (l.trans) d.append(node('small', '', l.trans));
+          d.onclick = () => { picked.has(i) ? picked.delete(i) : picked.add(i); d.classList.toggle('pick'); };
+          d.ondblclick = () => seek(l.start);
+          box.append(d);
+        });
+        miniLine = -1;
+      }
+      if (st.line !== miniLine && L.length) {
+        box.querySelectorAll('.lm-ln').forEach((d, i) => d.classList.toggle('now', i === st.line));
+        const d = box.children[st.line]; if (d) box.scrollTop = d.offsetTop - box.clientHeight / 2 + d.offsetHeight / 2;
+        miniLine = st.line;
+      }
+    }
+    /* ---------- 桌面歌词（v3.8） ---------- */
+    const DL_DEF = {
+      on: false, folded: false, locked: false, x: .5, y: .14, vertical: false, twoLine: false, trans: true, align: 'center',
+      size: 28, transSize: 15, weight: 600, spacing: 1, lineGap: 1.35, width: 88,
+      color: '#ffffff', hi: '#ffc2d6', karaoke: true, stroke: '#4a2f3b', strokeW: 1.5, glow: '#ff9ec0', glowR: 6, bg: '#000000', bgOp: 0,
+      anim: 'pop', step: 55, first: false, firstScale: 1.6, css: '', ms: false
+    };
+    const DL_FONT_DEF = { base: '', han: '', kana: '', hangul: '', latin: '', num: '', other: '' };
+    const DL_SCRIPTS = [['han', '中文'], ['kana', '日文假名'], ['hangul', '韩文'], ['latin', '英文'], ['num', '数字与符号'], ['other', '其他文字']];
+    const DL_ANIMS = [['none', '无'], ['pop', '逐字弹出'], ['fade', '逐字淡入'], ['rise', '逐字上浮'], ['drop', '逐字落下'], ['blur', '逐字变清晰'], ['type', '打字机'], ['wave', '逐字波浪'], ['line', '整句浮现']];
+    const DL_SAMPLE = [{ text: '梨花落在春雪里 Pear in Snow', trans: '梨の花 · 눈꽃 · 2026' }, { text: '把一点小小的陪伴放进歌里', trans: '' }];
+    mc.dl = Object.assign({}, DL_DEF, object(mc.dl));
+    mc.dl.font = Object.assign({}, DL_FONT_DEF, object(mc.dl.font));
+    const scriptOf = ch => /\p{Script=Han}/u.test(ch) ? 'han'
+      : /[\p{Script=Hiragana}\p{Script=Katakana}\u30fc]/u.test(ch) ? 'kana'
+      : /\p{Script=Hangul}/u.test(ch) ? 'hangul'
+      : /\p{Script=Latin}/u.test(ch) ? 'latin'
+      : /[\p{N}\p{P}\p{S}\s]/u.test(ch) ? 'num' : 'other';
+
+    /* 上传的字体存在浏览器（IndexedDB「lili-lyric-fonts」），用 FontFace 装进页面 */
+    const dlFonts = new Map(), dlFaces = new Map();
+    let fdbp = null, dlFontsReady = null;
+    const fdb = () => fdbp || (fdbp = new Promise((res, rej) => {
+      const r = W.indexedDB.open('lili-lyric-fonts', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('fonts', { keyPath: 'id' });
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    }));
+    const ftx = async (mode, fn) => { const d = await fdb(); return new Promise((res, rej) => { const t = d.transaction('fonts', mode); const q = fn(t.objectStore('fonts')); t.oncomplete = () => res(q?.result); t.onerror = () => rej(t.error); }); };
+    async function dlFace(rec) {
+      const family = 'lili-dl-' + rec.id;
+      try {
+        const f = new W.FontFace(family, await rec.blob.arrayBuffer()); await f.load(); DOC.fonts.add(f);
+        dlFaces.set(rec.id, f); dlFonts.set(rec.id, { id: rec.id, name: rec.name, family }); return true;
+      } catch { return false; }
+    }
+    const dlLoadFonts = () => dlFontsReady || (dlFontsReady = (async () => {
+      let all = []; try { all = (await ftx('readonly', s => s.getAll())) || []; } catch {}
+      for (const r of all) await dlFace(r);
+    })());
+    async function dlAddFonts(files) {
+      await dlLoadFonts(); let n = 0;
+      for (const f of files) {
+        const rec = { id: 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), name: f.name.replace(/\.[^.]+$/, '') || '字体', blob: f };
+        if (!(await dlFace(rec))) continue;
+        try { await ftx('readwrite', s => s.put(rec)); n++; } catch { dlFonts.delete(rec.id); }
+      }
+      return n;
+    }
+    async function dlDelFont(id) {
+      try { await ftx('readwrite', s => s.delete(id)); } catch {}
+      const f = dlFaces.get(id); if (f) { try { DOC.fonts.delete(f); } catch {} }
+      dlFaces.delete(id); dlFonts.delete(id);
+      [mc.dl, dlDraftBase].forEach(o => o && Object.keys(o.font).forEach(k => { if (o.font[k] === 'up:' + id) o.font[k] = ''; }));
+      saveMc(); dlBump();
+    }
+    const fam = v => {
+      v = String(v || '');
+      if (v.startsWith('sys:')) return v.slice(4);
+      if (v.startsWith('up:')) { const f = dlFonts.get(v.slice(3)); return f ? '"' + f.family + '"' : ''; }
+      if (v.startsWith('name:')) return '"' + v.slice(5).replace(/["\\;{}<>]/g, '') + '"';
+      return '';
+    };
+    const rgba = (hex, a) => { const m = String(hex || '').match(/^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i); return m ? 'rgba(' + [m[1], m[2], m[3]].map(x => parseInt(x, 16)).join(',') + ',' + (+a || 0) + ')' : 'transparent'; };
+
+    function dlStyle(el, preview) {
+      const c = mc.dl, s = el.style, w = Math.max(0, +c.strokeW || 0), g = Math.max(0, +c.glowR || 0), sh = [];
+      if (g > 0) sh.push('0 0 ' + g + 'px ' + c.glow);
+      s.setProperty('--dl-sw', (w * 2) + 'px'); s.setProperty('--dl-stroke', c.stroke);
+      const base = fam(c.font.base) || 'var(--mainFontFamily, serif)', set = (k, v) => s.setProperty(k, v);
+      set('--dl-size', c.size + 'px'); set('--dl-tsize', c.transSize + 'px'); set('--dl-weight', String(c.weight));
+      set('--dl-ls', c.spacing + 'px'); set('--dl-lh', String(c.lineGap)); set('--dl-color', c.color); set('--dl-hi', c.hi);
+      set('--dl-shadow', sh.join(',') || 'none'); set('--dl-bg', rgba(c.bg, c.bgOp)); set('--dl-step', c.step + 'ms'); set('--dl-first', String(c.firstScale));
+      set('--dl-len', preview ? (c.vertical ? '200px' : '100%') : c.width + (c.vertical ? 'vh' : 'vw'));
+      set('--dl-f-base', base);
+      DL_SCRIPTS.forEach(([k]) => { const f = fam(c.font[k]); set('--dl-f-' + k, f ? f + ', ' + base : base); });
+      el.className = 'lili-dl' + (c.vertical ? ' is-v' : '') + ' a-' + c.anim + (c.karaoke ? ' kara' : '') + (c.first ? ' big1' : '') + ' al-' + c.align + (preview ? ' is-pv' : '');
+    }
+    function dlText(text, cls) {
+      const box = node('div', cls); let i = 0, first = true, word = null;
+      for (const ch of Array.from(String(text || ''))) {
+        const sc = scriptOf(ch), sp = node('span', 'dl-ch s-' + sc, ch); sp.dataset.c = ch;
+        if (/\s/.test(ch)) { sp.classList.add('sp'); word = null; box.append(sp); continue; }
+        sp.style.setProperty('--i', String(i++));
+        if (first) { sp.classList.add('first'); first = false; }
+        if (sc === 'latin' || sc === 'num') { if (!word) { word = node('span', 'dl-w'); box.append(word); } word.append(sp); }
+        else { word = null; box.append(sp); }
+      }
+      box.style.setProperty('--n', String(i));
+      return box;
+    }
+    function dlBlock(l, cls, trans) {
+      const b = node('div', 'dl-block ' + cls); b.append(dlText(l.text, 'dl-main'));
+      if (trans && l.trans) b.append(dlText(l.trans, 'dl-tr'));
+      return b;
+    }
+    function dlContent(el, cur, next) {
+      el.replaceChildren(dlBlock(cur, 'dl-cur', mc.dl.trans));
+      if (mc.dl.twoLine && next) el.append(dlBlock(next, 'dl-next', false));
+    }
+    function dlFill(el, cur, next, preview) { dlStyle(el, preview); dlContent(el, cur, next); }
+    function dlKara(el, frac) {
+      const chars = el.querySelectorAll('.dl-cur .dl-main .dl-ch:not(.sp)'), k = Math.floor(Math.max(0, Math.min(1, frac)) * chars.length + 1e-6);
+      chars.forEach((c, i) => c.classList.toggle('sung', i < k));
+    }
+
+    let dlLayer = null, dlHost = null, dlBox = null, dlRev = 0, dlTipT = 0, dlOpenSettings = null;
+    let dlStyled = -1, dlIdx = -2, dlSong = null, dlLyrics = null, dlChars = [], dlK = -1, dlRaf = 0;
+    const dlCss = node('style'); dlCss.id = 'lili-dl-custom';
+    const dlApplyCss = () => { const t = String(mc.dl.css || ''); if (dlCss.textContent !== t) dlCss.textContent = t; if (!dlCss.isConnected) DOC.head.append(dlCss); };
+    dlApplyCss();
+    /* 直接读播放器时钟，不等 250ms 一次的进度回调，换行和已唱变色都跟得上 */
+    const nowPos = () => !st.playing ? st.pos : st.rec?.kind === 'audio' ? (audioEl?.currentTime || 0) * 1000 : ac ? (ac.currentTime - st.startAt) * 1000 : st.pos;
+    function dlLineAt(L, pos) {
+      let i = Math.max(0, Math.min(L.length - 1, dlIdx >= 0 ? dlIdx : 0));
+      while (i > 0 && L[i].start > pos + 1) i--;
+      while (i + 1 < L.length && L[i + 1].start <= pos + 1) i++;
+      return i;
+    }
+    function dlRender(pos) {
+      const c = mc.dl;
+      if (!c.on || !st.rec) { if (dlLayer) { dlLayer.remove(); dlLayer = dlHost = dlBox = null; } return; }
+      if (dlHost && !dlLayer?.isConnected) { dlLayer = dlHost = dlBox = null; }
+      if (!dlHost) { dlBuild(); dlStyled = -1; }
+      dlHost.classList.toggle('folded', !!c.folded); dlHost.classList.toggle('locked', !!c.locked);
+      if (dlStyled !== dlRev) { dlStyle(dlBox, false); dlStyled = dlRev; dlIdx = -2; }
+      const L = lyricsNow();
+      let idx = -1, cur, next = null;
+      if (L.length) { idx = dlLineAt(L, pos); cur = L[idx]; next = L[idx + 1] || null; }
+      else cur = { text: st.rec.title || '♪', trans: st.rec.artist || '' };
+      if (idx !== dlIdx || dlSong !== st.id || dlLyrics !== st.model?.lines) {
+        dlIdx = idx; dlSong = st.id; dlLyrics = st.model?.lines; dlContent(dlBox, cur, next);
+        dlChars = [...dlBox.querySelectorAll('.dl-cur .dl-main .dl-ch:not(.sp)')]; dlK = -1; dlPlace();
+      }
+      if (c.karaoke && L.length) {
+        const end = next ? next.start : Math.max(st.total || 0, cur.start + 5000);
+        const f = Math.max(0, Math.min(1, (pos - cur.start) / Math.max(1, end - cur.start)));
+        const k = Math.floor(f * dlChars.length + 1e-6);
+        if (k !== dlK) { const a = Math.max(0, Math.min(k, dlK)), b = Math.max(k, dlK); for (let i = a; i < b; i++) dlChars[i]?.classList.toggle('sung', i < k); if (dlK < 0) dlChars.forEach((ch, i) => ch.classList.toggle('sung', i < k)); dlK = k; }
+      }
+    }
+    let dlErr = '';
+    const dlSafe = () => { try { dlRender(nowPos()); dlErr = ''; return true; } catch (e) { dlErr = e?.message || String(e); console.warn('[梨梨工作台] 桌面歌词出错', e); return false; } };
+    function dlLoop() {
+      dlRaf = 0;
+      if (!dlHost || !mc.dl.on || mc.dl.folded || !st.playing || DOC.hidden) return;
+      if (!dlSafe()) return;
+      dlRaf = W.requestAnimationFrame(dlLoop);
+    }
+    /* 设置页底部那行小字：歌词现在在哪、多大、有没有出错，截图就能看出问题 */
+    function dlDiag() {
+      const c = mc.dl, L = lyricsNow();
+      if (dlErr) return '出错：' + dlErr;
+      if (!c.on) return '桌面歌词：关';
+      if (!st.rec) return '还没有在放歌';
+      if (!dlLayer?.isConnected) return '歌词层没有挂上页面';
+      const r = dlHost.getBoundingClientRect(), cs = W.getComputedStyle(dlHost), lc = W.getComputedStyle(dlLayer);
+      return '位置 ' + Math.round(r.left) + ',' + Math.round(r.top) + ' · 大小 ' + Math.round(r.width) + '×' + Math.round(r.height) + ' / 屏幕 ' + vw() + '×' + vh()
+        + (dlLayer.hasAttribute('popover') && dlLayer.matches(':popover-open') ? ' · 顶层显示' : ' · 普通浮层')
+        + ' · ' + (c.folded ? '已折叠' : '展开') + (c.locked ? ' · 锁定' : '') + ' · 歌词 ' + L.length + ' 句 · 第 ' + (dlIdx + 1) + ' 句'
+        + (cs.display === 'none' || cs.visibility === 'hidden' || lc.display === 'none' || lc.visibility === 'hidden' || +cs.opacity === 0 ? ' · 被样式隐藏了' : '');
+    }
+    function dlRescue() { Object.assign(mc.dl, { on: true, folded: false, locked: false, x: .5, y: .2 }); if (dlDraftBase) Object.assign(dlDraftBase, { on: true, folded: false, locked: false, x: .5, y: .2 }); saveMc(); dlLayer?.remove(); dlLayer = dlHost = dlBox = null; dlRev++; dlErr = ''; emit(); }
+    function dlPaint() {
+      dlSafe();
+      if (!dlRaf && dlHost && st.playing && mc.dl.on && !mc.dl.folded) dlRaf = W.requestAnimationFrame(dlLoop);
+    }
+    /* 歌词放在一个铺满屏幕、超出就裁掉的层里，再长也不会把网页撑宽 */
+    const vw = () => dlLayer?.clientWidth || DOC.documentElement.clientWidth || W.innerWidth;
+    const vh = () => dlLayer?.clientHeight || DOC.documentElement.clientHeight || W.innerHeight;
+    function dlPlace() {
+      if (!dlHost) return;
+      const VW = vw(), VH = vh(); let x = mc.dl.x * VW, y = mc.dl.y * VH;
+      dlHost.style.left = x + 'px'; dlHost.style.top = y + 'px';
+      const r = dlHost.getBoundingClientRect(), m = 4;
+      if (r.width < VW - 2 * m) { if (r.left < m) x += m - r.left; else if (r.right > VW - m) x -= r.right - (VW - m); }
+      if (r.height < VH - 2 * m) { if (r.top < m) y += m - r.top; else if (r.bottom > VH - m) y -= r.bottom - (VH - m); }
+      dlHost.style.left = x + 'px'; dlHost.style.top = y + 'px';
+      dlHost.classList.toggle('tools-below', r.top + (y - (mc.dl.y * VH)) < 56);
+    }
+    // 使用非模态顶层浮层：普通 z-index 无法越过 showModal() 的遮罩。
+    let dlFrontTimer = 0;
+    function dlFront() {
+      if (!dlLayer?.isConnected) return;
+      if (typeof dlLayer.showPopover === 'function') {
+        try {
+          if (dlLayer.matches(':popover-open')) dlLayer.hidePopover();
+          dlLayer.showPopover();
+        } catch (e) { console.warn('[梨梨工作台] 歌词顶层显示失败', e); }
+      }
+      dlPlace();
+    }
+    const dlFrontObserver = new W.MutationObserver(records => {
+      if (!dlLayer) return;
+      const dialogChanged = records.some(r => r.type === 'attributes'
+        ? r.target.tagName === 'DIALOG'
+        : [...r.addedNodes, ...r.removedNodes].some(n => n.nodeType === 1 && (n.tagName === 'DIALOG' || n.querySelector?.('dialog'))));
+      if (!dialogChanged) return;
+      W.clearTimeout(dlFrontTimer); dlFrontTimer = W.setTimeout(dlFront, 0);
+    });
+    dlFrontObserver.observe(DOC.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['open'] });
+    function dlBuild() {
+      dlHost = node('div'); dlHost.id = 'lili-dl-host';
+      dlBox = node('div', 'lili-dl');
+      const pill = node('button', 'dl-pill'); pill.type = 'button'; pill.title = '展开歌词'; pill.setAttribute('aria-label', '展开歌词'); pill.innerHTML = icon('lyric');
+      const tools = node('div', 'dl-tools');
+      const tb = (n, t, fn) => {
+        const b = node('button'); b.type = 'button'; b.title = t; b.setAttribute('aria-label', t); b.innerHTML = icon(n);
+        b.addEventListener('pointerdown', e => e.stopPropagation());
+        b.addEventListener('click', e => { e.stopPropagation(); fn(); });
+        return b;
+      };
+      tools.append(tb('pip', '小窗歌词（切到后台也能看）', () => pipOpen()), tb('fold', '折叠', () => dlSet({ folded: true })), tb('lock', '锁定位置', () => dlSet({ locked: true })),
+        tb('gear', '歌词设置', () => dlOpenSettings?.()), tb('close', '关闭桌面歌词', () => dlSet({ on: false })));
+      dlHost.append(tools, dlBox, pill);
+      let drag = null;
+      dlHost.addEventListener('pointerdown', e => {
+        if (mc.dl.locked || e.button > 0) return;
+        const r = dlHost.getBoundingClientRect();
+        drag = { x: e.clientX, y: e.clientY, cx: r.left + r.width / 2, cy: r.top + r.height / 2, moved: false, id: e.pointerId };
+      });
+      dlHost.addEventListener('pointermove', e => {
+        if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+        if (!drag.moved && Math.abs(dx) + Math.abs(dy) > 6) { drag.moved = true; try { dlHost.setPointerCapture(drag.id); } catch {} dlHost.classList.add('dragging'); }
+        if (drag.moved) { dlHost.style.left = (drag.cx + dx) + 'px'; dlHost.style.top = (drag.cy + dy) + 'px'; }
+      });
+      const end = () => {
+        if (!drag) return; const d = drag; drag = null; dlHost.classList.remove('dragging');
+        if (d.moved) {
+          const r = dlHost.getBoundingClientRect();
+          mc.dl.x = +Math.max(0, Math.min(1, (r.left + r.width / 2) / vw())).toFixed(4);
+          mc.dl.y = +Math.max(0, Math.min(1, (r.top + r.height / 2) / vh())).toFixed(4);
+          if (dlDraftBase) { dlDraftBase.x = mc.dl.x; dlDraftBase.y = mc.dl.y; }
+          saveMc(); dlPlace(); emit(); return;
+        }
+        if (mc.dl.folded) { dlSet({ folded: false }); return; }
+        dlHost.classList.add('show-tools'); W.clearTimeout(dlTipT);
+        dlTipT = W.setTimeout(() => dlHost?.classList.remove('show-tools'), 3500);
+      };
+      dlHost.addEventListener('pointerup', end);
+      dlHost.addEventListener('pointercancel', () => { if (drag?.moved) end(); else drag = null; });
+      dlLayer = node('div'); dlLayer.id = 'lili-dl-layer'; dlLayer.append(dlHost);
+      if (typeof dlLayer.showPopover === 'function') dlLayer.setAttribute('popover', 'manual');
+      DOC.body.append(dlLayer); dlFront();
+    }
+    /* ---------- 小窗歌词（画中画，酒馆切到后台也浮在最上面）+ 通知栏歌词 ---------- */
+    let pip = null, msLast = '';
+    const pipSupported = () => !!(DOC.pictureInPictureEnabled && 'requestPictureInPicture' in W.HTMLVideoElement.prototype && 'captureStream' in W.HTMLCanvasElement.prototype);
+    function dlNow(pos) {
+      const L = lyricsNow();
+      if (!st.rec) return null;
+      if (!L.length) return { cur: { text: st.rec.title || '♪', trans: st.rec.artist || '' }, next: null, idx: -1, lrc: false };
+      let i = 0; while (i + 1 < L.length && L[i + 1].start <= pos + 1) i++;
+      const cur = L[i], next = L[i + 1] || null;
+      return { cur, next, idx: i, lrc: true, start: cur.start, end: next ? next.start : Math.max(st.total || 0, cur.start + 5000) };
+    }
+    function msUpdate() {
+      const ms = W.navigator.mediaSession;
+      if (!ms || !st.rec) return;
+      if (!mc.dl.ms) { if (msLast) { msLast = ''; media(); } return; }
+      const info = dlNow(nowPos()), line = info?.lrc ? info.cur.text : '';
+      const key = st.id + '|' + line; if (key === msLast) return; msLast = key;
+      try { ms.metadata = new W.MediaMetadata({ title: line || st.rec.title || '无题', artist: line ? (st.rec.title || '') + (st.rec.artist ? ' · ' + st.rec.artist : '') : st.rec.artist || '', album: '梨梨的音乐', artwork: [{ src: mc.cover || DEF_COVER, sizes: '512x512' }] }); } catch {}
+    }
+    const cssFam = v => { const f = fam(v); return f && !f.startsWith('var(') ? f : ''; };
+    function pipDraw() {
+      const c = mc.dl, cv = pip.canvas, x = pip.ctx, Wd = cv.width, Ht = cv.height, pos = nowPos(), info = dlNow(pos);
+      x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.shadowBlur = 0;
+      x.fillStyle = '#141416'; x.fillRect(0, 0, Wd, Ht);
+      if (c.bgOp > 0) { x.fillStyle = rgba(c.bg, c.bgOp); x.fillRect(0, 0, Wd, Ht); }
+      if (!info) { x.restore(); return; }
+      const key = st.id + '|' + info.idx;
+      if (key !== pip.key) { pip.key = key; pip.t0 = W.performance.now(); }
+      const since = Math.max(16, W.performance.now() - pip.t0);
+      const baseFam = cssFam(c.font.base) || (W.getComputedStyle(DOC.body).getPropertyValue('--mainFontFamily').trim() || 'serif');
+      const famOf = ch => { const k = scriptOf(ch); return (cssFam(c.font[k]) ? cssFam(c.font[k]) + ', ' : '') + baseFam; };
+      const lineOf = (text, size, weight, opts = {}) => {
+        const chars = Array.from(String(text || '')), items = []; let w = 0;
+        chars.forEach((ch, i) => {
+          const big = opts.first && i === chars.findIndex(q => !/\s/.test(q)) ? c.firstScale : 1;
+          const font = weight + ' ' + Math.round(size * big) + 'px ' + famOf(ch);
+          x.font = font; const cw = x.measureText(ch).width + (i < chars.length - 1 ? c.spacing * size / c.size : 0);
+          items.push({ ch, font, w: cw }); w += cw;
+        });
+        return { items, w };
+      };
+      const draw = (ln, y, color, opts = {}) => {
+        const maxW = Wd - 60, k = ln.w > maxW ? maxW / ln.w : 1;
+        let px = c.align === 'start' ? 30 : c.align === 'end' ? Wd - 30 - ln.w * k : (Wd - ln.w * k) / 2, n = 0;
+        const sung = opts.sung ?? -1;
+        ln.items.forEach((it, i) => {
+          const blank = /\s/.test(it.ch); const idx = blank ? n : n++;
+          let a = 1, dy = 0, sc = 1;
+          if (opts.anim && !blank) {
+            const t = Math.max(0, Math.min(1, (since - idx * c.step) / (c.anim === 'type' ? 1 : 420)));
+            const e = 1 - Math.pow(1 - t, 3);
+            if (c.anim === 'pop') { a = t; sc = .2 + .8 * e + Math.sin(t * Math.PI) * .12; }
+            else if (c.anim === 'fade' || c.anim === 'blur' || c.anim === 'type') a = t;
+            else if (c.anim === 'rise') { a = t; dy = (1 - e) * 20; }
+            else if (c.anim === 'drop') { a = t; dy = -(1 - e) * 26; }
+            else if (c.anim === 'wave') { a = t; dy = Math.sin((since / 1800 + idx * .05) * Math.PI * 2) * 4; }
+            else if (c.anim === 'line') { const lt = Math.min(1, since / 500); a = lt; dy = (1 - (1 - Math.pow(1 - lt, 3))) * 20; }
+          }
+          if (!blank && a > 0) {
+            x.save(); x.globalAlpha = a * (opts.alpha ?? 1); x.font = it.font;
+            x.translate(px + it.w * k / 2, y + dy); x.scale(k * sc, k * sc);
+            x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineJoin = 'round';
+            if (c.strokeW > 0) { x.lineWidth = c.strokeW * 2 * 1.6; x.strokeStyle = c.stroke; x.strokeText(it.ch, 0, 0); }
+            if (c.glowR > 0) { x.shadowBlur = c.glowR * 1.6; x.shadowColor = c.glow; }
+            x.fillStyle = sung >= 0 && idx < sung ? c.hi : color; x.fillText(it.ch, 0, 0);
+            x.restore();
+          }
+          px += it.w * k;
+        });
+      };
+      const main = lineOf(info.cur.text, 64, c.weight, { first: c.first });
+      const tr = c.trans && info.cur.trans ? lineOf(info.cur.trans, 34, 400) : null;
+      const nx = c.twoLine && info.next ? lineOf(info.next.text, 38, c.weight) : null;
+      let sung = -1;
+      if (c.karaoke && info.lrc) { const n = main.items.filter(q => !/\s/.test(q.ch)).length, f = Math.max(0, Math.min(1, (pos - info.start) / Math.max(1, info.end - info.start))); sung = Math.floor(f * n + 1e-6); }
+      const total = 84 + (tr ? 54 : 0) + (nx ? 58 : 0), y0 = (Ht - total) / 2 + 42;
+      draw(main, y0, c.color, { anim: c.anim !== 'none', sung });
+      if (tr) draw(tr, y0 + 69, c.color, { alpha: .92 });
+      if (nx) draw(nx, y0 + (tr ? 127 : 71), c.color, { alpha: .55 });
+      x.restore();
+    }
+    function pipLoop() {
+      if (!pip) return;
+      W.clearTimeout(pip.timer);
+      try { pipDraw(); } catch {}
+      pip.timer = W.setTimeout(pipLoop, DOC.hidden ? 90 : 40);
+    }
+    function pipStop() {
+      if (!pip) return; const p = pip; pip = null;
+      W.clearTimeout(p.timer);
+      try { if (DOC.pictureInPictureElement === p.video) DOC.exitPictureInPicture(); } catch {}
+      try { p.video.srcObject?.getTracks().forEach(t => t.stop()); } catch {}
+      p.wrap.remove(); emit();
+    }
+    async function pipOpen() {
+      if (pip) { pipStop(); return false; }
+      if (!pipSupported()) { topTip('这个浏览器不支持小窗歌词'); return false; }
+      const wrap = node('div'); wrap.id = 'lili-dl-pip';
+      const canvas = node('canvas'); canvas.width = 960; canvas.height = 270;
+      const video = node('video'); video.muted = true; video.playsInline = true; video.setAttribute('playsinline', ''); video.disablePictureInPicture = false;
+      wrap.append(canvas, video); DOC.body.append(wrap);
+      pip = { wrap, canvas, ctx: canvas.getContext('2d'), video, timer: 0, key: '', t0: 0 };
+      pipLoop(); // 在等待视频就绪前持续绘制，避免透明首帧一直等待。
+      video.srcObject = canvas.captureStream(25);
+      video.addEventListener('leavepictureinpicture', () => pipStop());
+      try { await video.play(); await video.requestPictureInPicture(); pipLoop(); emit(); return true; }
+      catch (e) { pipStop(); topTip('小窗没打开：' + (e?.message || e)); return false; }
+    }
+    function dlBump() { dlRev++; dlApplyCss(); dlPaint(); if (pip) pipDraw(); }
+    function dlSet(p) { Object.assign(mc.dl, p); if (dlDraftBase) Object.assign(dlDraftBase, p); saveMc(); dlRev++; dlApplyCss(); emit(); }
+    const dlClone = v => JSON.parse(JSON.stringify(v));
+    const dlDraft = {
+      begin() { if (!dlDraftBase) dlDraftBase = dlClone(mc.dl); },
+      commit() { dlDraftBase = null; saveMc(); dlDraftBase = dlClone(mc.dl); },
+      discard() { if (!dlDraftBase) return; const b = dlDraftBase; dlDraftBase = null; Object.keys(mc.dl).forEach(k => { if (!(k in b)) delete mc.dl[k]; }); Object.assign(mc.dl, b); dlBump(); },
+      end() { dlDraftBase = null; }
+    };
+    if (Object.values(mc.dl.font).some(v => String(v).startsWith('up:'))) dlLoadFonts().then(() => dlBump());
+    DOC.addEventListener('visibilitychange', () => { if (!DOC.hidden) dlPaint(); });
+
+    fabCss.textContent += `
+#lili-dl-layer{position:fixed;top:0;left:0;right:0;bottom:0;width:auto;height:auto;margin:0;padding:0;border:0;background:none;display:block;visibility:visible;opacity:1;overflow:hidden;pointer-events:none;z-index:2147483647}
+#lili-dl-layer::backdrop{background:transparent;pointer-events:none}
+#lili-dl-pip{position:fixed;left:0;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;contain:strict}
+#lili-dl-host{position:absolute;left:50%;top:14%;transform:translate(-50%,-50%);pointer-events:auto;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+#lili-dl-host.dragging{cursor:grabbing}
+#lili-dl-host.locked{pointer-events:none;cursor:default}
+#lili-dl-host .dl-pill{display:none}
+#lili-dl-host.folded .lili-dl,#lili-dl-host.folded .dl-tools{display:none}
+#lili-dl-host.folded .dl-pill{display:grid;place-items:center;width:40px;height:40px;padding:0;border-radius:50%;border:1px solid rgba(255,255,255,.55);background:rgba(24,24,26,.6);color:#fff;font-size:18px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);cursor:pointer;pointer-events:auto;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+#lili-dl-host .dl-tools{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);margin-bottom:8px;display:none;gap:2px;padding:3px;border-radius:999px;background:rgba(24,24,26,.78);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);white-space:nowrap}
+#lili-dl-host.show-tools:not(.folded) .dl-tools{display:flex}
+#lili-dl-host.tools-below .dl-tools{bottom:auto;top:100%;margin:8px 0 0}
+#lili-dl-host .dl-tools button{display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:none;color:#fff;font-size:16px;cursor:pointer}
+#lili-dl-host .dl-tools button:active{background:rgba(255,255,255,.18)}
+.lili-dl{box-sizing:border-box;display:flex;flex-direction:column;gap:.2em;width:var(--dl-len,88vw);max-width:calc(100vw - 8px);max-height:calc(100vh - 8px);overflow:hidden;padding:.25em .7em;border-radius:14px;background:var(--dl-bg,transparent);color:var(--dl-color,#fff);font-family:var(--dl-f-base,serif);font-size:var(--dl-size,28px);font-weight:var(--dl-weight,600);line-height:var(--dl-lh,1.35);letter-spacing:var(--dl-ls,0);text-align:center;overflow-wrap:anywhere}
+.lili-dl.is-v{writing-mode:vertical-rl;width:auto;height:var(--dl-len,70vh)}
+.lili-dl.is-pv{max-width:100%}
+.lili-dl.al-start{text-align:start}.lili-dl.al-end{text-align:end}
+.lili-dl .dl-block{display:flex;flex-direction:column;gap:.12em}
+.lili-dl .dl-main,.lili-dl .dl-tr{display:block}
+.lili-dl .dl-tr{font-size:var(--dl-tsize,15px);font-weight:normal;opacity:.92}
+.lili-dl .dl-next{font-size:.72em;opacity:.55}
+.lili-dl .dl-ch{position:relative;isolation:isolate;display:inline-block;white-space:pre;overflow-wrap:normal;text-shadow:var(--dl-shadow,none);transition:color .25s linear}
+.lili-dl .dl-ch::before{content:attr(data-c);position:absolute;left:0;top:0;z-index:-1;color:transparent;-webkit-text-fill-color:transparent;-webkit-text-stroke:var(--dl-sw,0px) var(--dl-stroke,transparent);text-shadow:none;pointer-events:none}
+.lili-dl .dl-w{display:inline-block;white-space:nowrap}
+.lili-dl .s-han{font-family:var(--dl-f-han)}.lili-dl .s-kana{font-family:var(--dl-f-kana)}.lili-dl .s-hangul{font-family:var(--dl-f-hangul)}
+.lili-dl .s-latin{font-family:var(--dl-f-latin)}.lili-dl .s-num{font-family:var(--dl-f-num)}.lili-dl .s-other{font-family:var(--dl-f-other)}
+.lili-dl.kara .dl-cur .dl-main .dl-ch.sung{color:var(--dl-hi,#ffc2d6)}
+.lili-dl.big1 .dl-cur .dl-main .dl-ch.first{font-size:calc(var(--dl-first,1.6) * 1em);line-height:1}
+.lili-dl .dl-cur .dl-main .dl-ch{animation-delay:calc(var(--i,0) * var(--dl-step,55ms));animation-fill-mode:both}
+.lili-dl.a-pop .dl-cur .dl-main .dl-ch{animation-name:dl-pop;animation-duration:.45s;animation-timing-function:cubic-bezier(.3,1.5,.5,1)}
+.lili-dl.a-fade .dl-cur .dl-main .dl-ch{animation-name:dl-fade;animation-duration:.5s}
+.lili-dl.a-rise .dl-cur .dl-main .dl-ch{animation-name:dl-rise;animation-duration:.5s;animation-timing-function:cubic-bezier(.2,.9,.3,1)}
+.lili-dl.a-drop .dl-cur .dl-main .dl-ch{animation-name:dl-drop;animation-duration:.5s;animation-timing-function:cubic-bezier(.2,.9,.3,1)}
+.lili-dl.a-blur .dl-cur .dl-main .dl-ch{animation-name:dl-blur;animation-duration:.6s}
+.lili-dl.a-type .dl-cur .dl-main .dl-ch{animation-name:dl-type;animation-duration:.01s;animation-timing-function:steps(1)}
+.lili-dl.a-wave .dl-cur .dl-main .dl-ch{animation:dl-fade .35s calc(var(--i,0) * var(--dl-step,55ms)) both,dl-wave 1.8s ease-in-out calc(var(--i,0) * 90ms) infinite}
+.lili-dl.a-line .dl-cur{animation:dl-rise .5s cubic-bezier(.2,.9,.3,1) both}
+.lili-dl:not(.a-none):not(.a-line) .dl-cur .dl-tr{animation:dl-fade .6s .15s both}
+@keyframes dl-pop{0%{opacity:0;transform:scale(.2)}100%{opacity:1;transform:none}}
+@keyframes dl-fade{from{opacity:0}}
+@keyframes dl-rise{from{opacity:0;transform:translateY(.6em)}}
+@keyframes dl-drop{from{opacity:0;transform:translateY(-.8em)}}
+@keyframes dl-blur{from{opacity:0;filter:blur(8px)}}
+@keyframes dl-type{from{opacity:0}to{opacity:1}}
+@keyframes dl-wave{0%,100%{transform:none}50%{transform:translateY(-.14em)}}
+@media(prefers-reduced-motion:reduce){.lili-dl .dl-ch,.lili-dl .dl-cur,.lili-dl .dl-tr{animation:none!important}}
+`;
+
+    let lastId = null;
+    listeners.add(() => { if (lastId !== st.id) { lastId = st.id; picked.clear(); miniLine = -2; } });
+    listeners.add(() => paintMini(false));
+    listeners.add(dlPaint);
+    listeners.add(msUpdate);
+    const onResize = () => { renderFab(); placeMini(); dlPlace(); };
+    W.addEventListener('resize', onResize);
+
+    loadSongs().then(() => { if (mc.cur?.id && songs.has(mc.cur.id)) { st.plId = mc.cur.pl || mc.view; load(mc.cur.id); } renderFab(); emit(); });
+
+    function dispose() {
+      halt(); W.removeEventListener('lili-music-changed', onLib); W.removeEventListener('resize', onResize);
+      dlFrontObserver.disconnect(); W.clearTimeout(dlFrontTimer);
+      W.cancelAnimationFrame(dlRaf); pipStop(); fabEl?.remove(); miniEl?.remove(); fabCss.remove(); dlLayer?.remove(); dlCss.remove(); ['--lm-fab', '--lm-op', '--lm-blur'].forEach(p => DOC.documentElement.style.removeProperty(p)); urls.forEach(u => W.URL.revokeObjectURL(u)); urls.clear();
+      try { ac?.close(); } catch {}
+    }
+    return {
+      mc, st, songs, pl, MODES, INST, GROUPS, has, selName, fmt, saveMc, listeners, emit, loadSongs,
+      playAt, toggle, play, pause, step, seek, setMode, setVolume, sleepIn, rearrange, selOf,
+      setLiked, delSongs, addTo, putSong, putSongs, removeFrom, importAudioFiles, importLinks, importListFile, exportSongs, copyLyrics, lyricsNow,
+      renderFab, toggleMini, coverUrl, DEF_COVER, dispose, newId, icon, applyLook, parseLrc,
+      patch, bgOf, LOAD_HTML,
+      dl: { diag: dlDiag, rescue: dlRescue, pip: pipOpen, pipOn: () => !!pip, pipOk: pipSupported, draft: dlDraft, set: dlSet, fill: dlFill, kara: dlKara, bump: dlBump, SAMPLE: DL_SAMPLE, SCRIPTS: DL_SCRIPTS, ANIMS: DL_ANIMS, DEF: DL_DEF, fonts: dlFonts, loadFonts: dlLoadFonts, addFonts: dlAddFonts, delFont: dlDelFont, setOpener: fn => { dlOpenSettings = fn; } },
+      reloadCurrent: () => { if (st.rec) { const p = st.pos, was = st.playing; if (st.rec.kind === 'audio') { st.model = st.rec.lrc ? { lines: parseLrc(st.rec.lrc) } : null; emit(); } else { rearrange(); } void p; void was; } }
+    };
+  })();
+
+  function createMusicModule() {
+    let panel = null, unsub = null, view = LM.mc.view || 'fav', picked = new Set(), openRow = null;
+    const $ = s => panel?.querySelector(s);
+    function nowCard() {
+      const box = node('div', 'lm-now');
+      box.innerHTML = `<div class="lm-disc"><div class="lm-label"></div></div>
+<div class="lm-now-main"><div class="lm-now-t"><b></b><span></span></div>
+<div class="lm-seek"><span class="a">0:00</span><input type="range" min="0" max="1000" value="0" aria-label="进度"><span class="b">0:00</span></div>
+<div class="lm-ctl"><button type="button" class="md"></button><button type="button" class="pv" title="上一首">${LM.icon('prev')}</button><button type="button" class="pp big">${LM.icon('play')}</button><button type="button" class="nx" title="下一首">${LM.icon('next')}</button>
+<label class="lm-vol" title="音量">${LM.icon('vol')}<input type="range" min="0" max="1" step="0.01"></label></div></div>`;
+      const q = s => box.querySelector(s);
+      q('.pp').onclick = LM.toggle; q('.pv').onclick = () => LM.step(-1); q('.nx').onclick = () => LM.step(1);
+      q('.md').onclick = () => { const i = LM.MODES.findIndex(m => m[0] === LM.mc.mode); LM.setMode(LM.MODES[(i + 1) % LM.MODES.length][0]); };
+      const vol = q('.lm-vol input'); vol.value = LM.mc.volume; vol.oninput = () => LM.setVolume(+vol.value);
+      const rg = q('.lm-seek input'); let dragging = false;
+      rg.oninput = () => { dragging = true; q('.lm-seek .a').textContent = LM.fmt(rg.value / 1000 * LM.st.total); };
+      rg.onchange = () => { dragging = false; LM.seek(rg.value / 1000 * LM.st.total); };
+      box.paint = () => {
+        const r = LM.st.rec, st = LM.st;
+        const P = LM.patch;
+        P(q('.lm-now-t b'), 'text', r?.title || '还没有在放歌');
+        P(q('.lm-now-t span'), 'text', st.loading ? '加载中…' : r ? (r.artist || '') + (r.kind === 'audio' ? ' · 音频' : ' · ' + (st.sel?.kind === 'raw' ? '钢琴' : LM.selName(st.sel || {})) + ' · ♩=' + (st.model?.tempo || '')) : '从下面的歌单里点一首');
+        P(q('.lm-label'), 'bg', LM.bgOf(LM.coverUrl()));
+        q('.lm-disc').classList.toggle('spin', st.playing);
+        P(q('.pp'), 'html', st.loading ? LM.LOAD_HTML : LM.icon(st.playing ? 'pause' : 'play'));
+        const m = LM.MODES.find(x => x[0] === LM.mc.mode); P(q('.md'), 'html', LM.icon(m[0]) + '<span>' + m[1] + '</span>');
+        if (!dragging) { const v = String(st.total ? Math.round(st.pos / st.total * 1000) : 0); if (rg.value !== v) rg.value = v; P(q('.lm-seek .a'), 'text', LM.fmt(st.pos)); }
+        P(q('.lm-seek .b'), 'text', LM.fmt(st.total));
+      };
+      return box;
+    }
+    function playlistBar() {
+      const bar = node('div', 'lm-pls');
+      for (const p of LM.mc.playlists) {
+        const b = button(p.name + ' ' + p.items.length, () => { view = p.id; LM.mc.view = view; LM.saveMc(); picked.clear(); render(); }, 'lm-pl' + (p.id === view ? ' is-on' : ''));
+        bar.append(b);
+      }
+      const fabBtn = button(LM.mc.fab ? '悬浮唱片：开' : '悬浮唱片：关', () => { LM.mc.fab = !LM.mc.fab; LM.saveMc(); LM.renderFab(); render(); }, 'lm-pl lm-fab-toggle' + (LM.mc.fab ? ' is-on' : ''));
+      bar.append(button('＋ 新建歌单', async () => {
+        const name = (await dialog('新歌单叫什么？', 'prompt', '新歌单'))?.trim(); if (!name) return;
+        const p = { id: LM.newId('pl'), name, items: [] }; LM.mc.playlists.push(p); view = p.id; LM.mc.view = view; LM.saveMc(); render();
+      }, 'lm-pl lm-pl-add'), fabBtn);
+      return bar;
+    }
+    function toolsBar() {
+      const p = LM.pl(view), bar = node('div', 'cw-toolbar lm-bar');
+      bar.append(button('播放全部', () => { const first = p.items.find(id => LM.songs.has(id)); if (!first) return notice('这个歌单还没有歌。'); LM.playAt(view, LM.mc.mode === 'reverse' ? p.items[p.items.length - 1] : first); }, 'cw-primary'));
+      const pick = node('select', 'lm-target'); pick.title = '导入到哪个歌单';
+      LM.mc.playlists.forEach(x => { const o = node('option', '', '导入到：' + x.name); o.value = x.id; pick.append(o); }); pick.value = view;
+      const fileA = node('input'); fileA.type = 'file'; fileA.accept = 'audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac,.opus,.lrc'; fileA.multiple = true; fileA.hidden = true;
+      fileA.onchange = async () => { const n = await LM.importAudioFiles([...fileA.files], pick.value); fileA.value = ''; notice(n ? `导入了 ${n} 首。` : '没有找到能用的音频文件。'); };
+      const fileL = node('input'); fileL.type = 'file'; fileL.accept = '.json,application/json'; fileL.multiple = true; fileL.hidden = true;
+      fileL.onchange = async () => { let n = 0; for (const f of fileL.files) { try { n += await LM.importListFile(f, pick.value); } catch (e) { notice(f.name + '：' + e.message); } } fileL.value = ''; if (n) notice(`导入了 ${n} 首。`); };
+      bar.append(pick,
+        button('网易云 · 登录 / 同步', () => NE.open()),
+        button('搜索网易云歌曲', () => NE.openSearch(pick.value)),
+        button('导入本地音频', () => fileA.click()),
+        button('导入音频链接', async () => { const t = await dialog('每行一个音频直链，后面可以空一格写歌名：\nhttps://…/song.mp3 歌名', 'prompt', ''); if (!t) return; const n = await LM.importLinks(t, pick.value); notice(n ? `导入了 ${n} 首。` : '没有找到 http 开头的链接。'); }),
+        button('导入歌单文件', () => fileL.click()),
+        button('导出', async () => {
+          const ids = picked.size ? [...picked] : p.items;
+          if (!ids.length) return notice('没有可以导出的歌。');
+          const hasAudio = ids.some(id => LM.songs.get(id)?.blob);
+          const withAudio = hasAudio ? await dialog('要把本地音频文件一起打包进去吗？（文件会变大）', 'confirm') : false;
+          const n = await LM.exportSongs(ids, p.name, withAudio); notice(`导出了 ${n} 首。`);
+        }), fileA, fileL);
+      if (!['fav', 'mine'].includes(view)) {
+        bar.append(button('改名', async () => { const n = (await dialog('歌单新名字', 'prompt', p.name))?.trim(); if (n) { p.name = n; LM.saveMc(); render(); } }),
+          button('删除歌单', async () => { if (!await ask(`删除歌单「${p.name}」？（歌本身还留在「我的音乐」和其他歌单里）`)) return; LM.mc.playlists = LM.mc.playlists.filter(x => x !== p); view = 'fav'; LM.mc.view = view; LM.saveMc(); render(); }, 'cw-danger'));
+      }
+      return bar;
+    }
+    function batchBar() {
+      const p = LM.pl(view), bar = node('div', 'lm-batch');
+      bar.hidden = !picked.size;
+      bar.append(node('span', '', `已选 ${picked.size} 首`),
+        button(picked.size === p.items.length ? '全不选' : '全选', () => { picked = picked.size === p.items.length ? new Set() : new Set(p.items); render(); }),
+        (() => { const s = node('select'); s.append(node('option', '', '加入歌单…')); LM.mc.playlists.filter(x => x.id !== view).forEach(x => { const o = node('option', '', x.name); o.value = x.id; s.append(o); });
+          s.onchange = () => { if (s.value) { LM.addTo(s.value, [...picked]); notice('已加入「' + LM.pl(s.value).name + '」'); picked.clear(); render(); } }; return s; })(),
+        button(view === 'mine' ? '移出我的音乐' : view === 'fav' ? '取消喜欢' : '移出歌单', () => { LM.removeFrom(view, [...picked]); picked.clear(); render(); }),
+        button('彻底删除', async () => { if (!await ask(`彻底删除这 ${picked.size} 首？所有歌单里都会去掉。`)) return; await LM.delSongs([...picked]); picked.clear(); render(); }, 'cw-danger'));
+      return bar;
+    }
+    function row(id, i, p) {
+      const r = LM.songs.get(id); if (!r) return null;
+      const el = node('div', 'cw-list-item lm-row' + (LM.st.id === id ? ' is-now' : ''));
+      const pick = heartSwitch(picked.has(id), '选择「' + r.title + '」');
+      pick.addEventListener('change', () => { pick.checked ? picked.add(id) : picked.delete(id); const b = $('.lm-batch'); b?.replaceWith(batchBar()); });
+      const main = button('', () => LM.playAt(view, id), 'lm-row-main');
+      const num = node('span', 'lm-row-n'); if (LM.st.id === id && LM.st.playing) { num.innerHTML = '<i class="lm-eq"><b></b><b></b><b></b></i>'; } else num.textContent = String(i + 1);
+      main.append(num, node('b', '', r.title || '无题'),
+        node('span', 'lm-row-sub', [r.artist, r.kind === 'audio' ? (r.source === 'netease' ? '网易云' : '音频') : r.kind === 'band' ? '乐队' : '钢琴', r.kind !== 'audio' && LM.mc.perSong[id]?.sel ? LM.selName(LM.mc.perSong[id].sel) : ''].filter(Boolean).join(' · ')));
+      const isLiked = r.kind === 'audio' ? !!r.liked : r.liked !== false;
+      const ib = (name, title, fn, cls = '') => { const b = button('', fn, 'lm-mini-btn lm-ib ' + cls); b.innerHTML = LM.icon(name, cls.includes('on') ? 'fill' : name === 'more' ? 'dots' : ''); b.title = title; b.setAttribute('aria-label', title); return b; };
+      const likeB = ib('heart', isLiked ? '取消喜欢' : '喜欢', () => LM.setLiked(id, !isLiked), 'lm-like' + (isLiked ? ' on' : ''));
+      const up = ib('up', '上移', () => move(p, i, -1)), dn = ib('down', '下移', () => move(p, i, 1));
+      const more = ib('more', '更多', () => { openRow = openRow === id ? null : id; render(); });
+      el.append(pick, main, likeB, up, dn, more);
+      if (openRow === id) el.append(rowMore(r, p));
+      return el;
+    }
+    function rowMore(r, p) {
+      const box = node('div', 'lm-more');
+      const add = node('select'); add.append(node('option', '', '加入歌单…'));
+      LM.mc.playlists.filter(x => x.id !== p.id).forEach(x => { const o = node('option', '', x.name); o.value = x.id; add.append(o); });
+      add.onchange = () => { if (add.value) { LM.addTo(add.value, [r.id]); notice('已加入「' + LM.pl(add.value).name + '」'); add.value = ''; } };
+      box.append(add, button('置顶', () => { p.items = [r.id, ...p.items.filter(x => x !== r.id)]; LM.saveMc(); render(); }));
+      if (r.kind !== 'audio') {
+        const sel = node('select'); sel.title = '编制';
+        const cur = LM.mc.perSong[r.id]?.sel || r.sel || (r.kind === 'piano' ? { kind: 'raw' } : null);
+        const opts = [['', '默认编制'], ['raw', '原谱钢琴'], ...LM.GROUPS.map(g => ['group:' + g.id, '合奏 · ' + g.name]), ...Object.keys(LM.INST).filter(k => !LM.has(k, 'perc')).map(k => ['solo:' + k, '独奏 · ' + LM.INST[k][0]])];
+        opts.forEach(([v, t]) => { const o = node('option', '', t); o.value = v; sel.append(o); });
+        sel.value = !LM.mc.perSong[r.id]?.sel ? '' : cur.kind === 'raw' ? 'raw' : cur.kind === 'group' ? 'group:' + cur.id : cur.kind === 'solo' ? 'solo:' + cur.id : '';
+        sel.onchange = () => {
+          const ps = LM.mc.perSong[r.id] = LM.mc.perSong[r.id] || {};
+          if (!sel.value) delete ps.sel; else if (sel.value === 'raw') ps.sel = { kind: 'raw' }; else { const [k, id] = sel.value.split(':'); ps.sel = { kind: k, id }; }
+          LM.saveMc(); if (LM.st.id === r.id) LM.rearrange(); render();
+        };
+        const tp = button('速度 ♩=' + (LM.mc.perSong[r.id]?.tempo || r.tempo || 84), async () => {
+          const v = +(await dialog('速度（40–200，留空恢复原速 ' + (r.tempo || 84) + '）', 'prompt', String(LM.mc.perSong[r.id]?.tempo || '')));
+          const ps = LM.mc.perSong[r.id] = LM.mc.perSong[r.id] || {};
+          if (v >= 40 && v <= 200) ps.tempo = Math.round(v); else delete ps.tempo;
+          LM.saveMc(); if (LM.st.id === r.id) LM.rearrange(); render();
+        });
+        box.append(sel, tp, button('复制整首歌词', () => LM.copyLyrics((r.rows || []).map(x => ({ text: x.text, trans: x.trans })), r)));
+      } else {
+        const lf = node('input'); lf.type = 'file'; lf.accept = '.lrc,text/plain'; lf.hidden = true;
+        lf.onchange = async () => { const f = lf.files?.[0]; if (!f) return; const t = await f.text(); if (!LM.parseLrc(t).length) { notice('这个文件里没有找到带时间的歌词。'); return; } r.lrc = t; await LM.putSong(r); if (LM.st.id === r.id) LM.reloadCurrent(); notice('歌词配好啦。'); render(); };
+        box.append(button('改名', async () => { const n = (await dialog('歌名', 'prompt', r.title))?.trim(); if (!n) return; const a = (await dialog('歌手（可空）', 'prompt', r.artist || '')) ?? r.artist; r.title = n; r.artist = String(a || '').trim(); await LM.putSong(r); LM.emit(); render(); }),
+          button(r.lrc ? '换歌词 (.lrc)' : '配歌词 (.lrc)', () => lf.click()), lf);
+        if (r.lrc) box.append(button('去掉歌词', async () => { delete r.lrc; await LM.putSong(r); if (LM.st.id === r.id) LM.reloadCurrent(); render(); }),
+          button('复制歌词', () => LM.copyLyrics(LM.parseLrc(r.lrc), r)));
+      }
+      box.append(button(p.id === 'fav' ? '取消喜欢' : '移出歌单', () => { LM.removeFrom(p.id, [r.id]); render(); }),
+        button('彻底删除', async () => { if (await ask('彻底删除「' + r.title + '」？')) { await LM.delSongs([r.id]); render(); } }, 'cw-danger'));
+      return box;
+    }
+    function move(p, i, d) { const j = i + d; if (j < 0 || j >= p.items.length) return; const a = p.items; [a[i], a[j]] = [a[j], a[i]]; LM.saveMc(); render(); }
+    /* ---------- 桌面歌词设置（v3.8）：改动即时预览，点「保存」才写进存储 ---------- */
+    let dlSheet = null;
+    function openLyricSettings() {
+      if (dlSheet) { dlSheet.d.focus(); return; }
+      const sheet = openSheet('桌面歌词'); dlSheet = sheet;
+      sheet.d.classList.add('lm-settings-dialog', 'dl-settings-dialog');
+      const x = button('×', () => sheet.requestClose()); x.title = '关闭'; x.setAttribute('aria-label', '关闭');
+      sheet.d.querySelector('.cw-sheet-head').append(x);
+      const c = LM.mc.dl, D = LM.dl;
+      D.draft.begin();
+      let dirty = false, saving = false, cssT = 0, syncers = [], css = null, flashT = 0;
+      const status = node('span', 'cw-note dl-status');
+      const saveBtn = button('保存', () => save(), 'cw-primary dl-save');
+      const paintFoot = () => {
+        if (saving) return;
+        saveBtn.disabled = !dirty; saveBtn.classList.remove('is-done');
+        saveBtn.replaceChildren(DOC.createTextNode('保存'));
+        status.textContent = dirty ? '有没保存的修改' : '';
+      };
+      const flushCss = () => { W.clearTimeout(cssT); if (css && css.value !== (c.css || '')) { c.css = css.value; D.bump(); } };
+      async function save() {
+        if (saving) return;
+        flushCss(); saving = true; saveBtn.disabled = true; status.textContent = '';
+        saveBtn.replaceChildren(waveDots(), DOC.createTextNode('保存中'));
+        try { D.draft.commit(); await sleep(550); dirty = false; }
+        catch (e) { notice('没保存上：' + (e?.message || e)); }
+        saving = false;
+        if (!dirty) {
+          saveBtn.classList.add('is-done'); saveBtn.replaceChildren(DOC.createTextNode('已保存 ✓'));
+          W.clearTimeout(flashT); flashT = W.setTimeout(() => { if (dlSheet === sheet) paintFoot(); }, 1400);
+        } else paintFoot();
+      }
+      sheet.requestClose = async () => {
+        flushCss();
+        if (dirty && !saving) { if (await ask('桌面歌词还有没保存的修改，要保存吗？')) await save(); else { D.draft.discard(); dirty = false; } }
+        sheet.close();
+      };
+      const pipBtn = button(D.pipOn() ? '关闭小窗歌词' : '小窗歌词（后台也显示）', async () => { await D.pip(); pipBtn.textContent = D.pipOn() ? '关闭小窗歌词' : '小窗歌词（后台也显示）'; });
+      if (!D.pipOk()) { pipBtn.disabled = true; pipBtn.textContent = '这个浏览器不支持小窗歌词'; }
+      const diag = node('p', 'cw-note dl-diag');
+      const pvBox = node('div', 'lili-dl');
+      const paintPv = () => { D.fill(pvBox, D.SAMPLE[0], D.SAMPLE[1], true); if (c.karaoke) D.kara(pvBox, .45); };
+      const changed = () => { D.bump(); paintPv(); dirty = true; paintFoot(); };
+      const head = t => node('div', 'dl-h', t);
+      const LIVE = ['on', 'locked', 'ms'];
+      const sw = (label, key) => {
+        const l = node('label', 'cw-check lm-check'), s = heartSwitch(!!c[key], label);
+        s.addEventListener('change', () => { if (LIVE.includes(key)) D.set({ [key]: s.checked }); else { c[key] = s.checked; changed(); } });
+        l.append(s, node('span', '', label)); l._sync = () => { if (s.checked !== !!c[key]) s.checked = !!c[key]; }; syncers.push(l); return l;
+      };
+      const sel = (label, key, opts) => {
+        const s = node('select'); opts.forEach(([v, t]) => { const o = node('option', '', t); o.value = v; s.append(o); });
+        s.value = key === 'vertical' ? (c.vertical ? '1' : '0') : String(c[key]);
+        s.onchange = () => { c[key] = key === 'vertical' ? s.value === '1' : s.value; changed(); };
+        return field(label, s);
+      };
+      const sl = (label, key, min, max, step, f = v => String(v)) => {
+        const r = node('input'); r.type = 'range'; r.min = min; r.max = max; r.step = step; r.value = c[key];
+        const out = node('span', 'lm-val', f(+c[key]));
+        r.oninput = () => { c[key] = +r.value; out.textContent = f(+r.value); changed(); };
+        const row = node('label', 'cw-field lm-slider'); row.append(node('span', '', label), r, out);
+        row._sync = () => { if (DOC.activeElement !== r && +r.value !== +c[key]) { r.value = c[key]; out.textContent = f(+c[key]); } }; syncers.push(row);
+        return row;
+      };
+      const col = (label, key) => {
+        const i = node('input'); i.type = 'color'; i.value = c[key];
+        i.oninput = () => { c[key] = i.value; changed(); };
+        const f = field(label, i); f.classList.add('dl-color'); return f;
+      };
+      const grid = (cls, ...kids) => { const g = node('div', cls); g.append(...kids); return g; };
+      const pct = v => Math.round(v * 100) + '%';
+
+      const fontBox = node('div', 'dl-fonts');
+      const upl = node('input'); upl.type = 'file'; upl.accept = '.ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2'; upl.multiple = true; upl.hidden = true;
+      upl.onchange = async () => {
+        const files = [...(upl.files || [])]; upl.value = ''; if (!files.length) return;
+        const n = await D.addFonts(files);
+        if (n < files.length) notice(n ? `加好了 ${n} 个字体，另外 ${files.length - n} 个读不出来。` : '这个字体文件读不出来，换一个 ttf / otf / woff 试试。');
+        paintFonts(); paintPv();
+      };
+      const fontSelect = (isBase, cur) => {
+        const s = node('select'), add = (v, t) => { const o = node('option', '', t); o.value = v; s.append(o); };
+        add('', isBase ? '跟随酒馆' : '同整体字体'); add('sys:serif', '衬线'); add('sys:sans-serif', '无衬线'); add('sys:monospace', '等宽'); add('sys:cursive', '手写');
+        D.fonts.forEach(f => add('up:' + f.id, f.name));
+        if (cur.startsWith('name:')) add(cur, cur.slice(5));
+        add('__name', '输入字体名…');
+        s.value = cur; if (s.value !== cur) s.value = '';
+        return s;
+      };
+      function paintFonts() {
+        fontBox.replaceChildren();
+        [['base', '整体'], ...D.SCRIPTS].forEach(([k, t]) => {
+          const s = fontSelect(k === 'base', c.font[k] || '');
+          s.onchange = async () => {
+            if (s.value === '__name') {
+              const old = String(c.font[k] || ''), v = await dialog('字体名', 'prompt', old.startsWith('name:') ? old.slice(5) : '');
+              if (v && v.trim()) { c.font[k] = 'name:' + v.trim(); changed(); }
+              paintFonts();
+            } else { c.font[k] = s.value; changed(); }
+          };
+          fontBox.append(field(t, s));
+        });
+        const own = node('div', 'dl-own');
+        D.fonts.forEach(f => {
+          const chip = node('span', 'dl-chip'), nm = node('span', '', f.name); nm.style.fontFamily = '"' + f.family + '"';
+          chip.append(nm, button('删除', async () => { if (!(await ask('删除字体「' + f.name + '」？'))) return; await D.delFont(f.id); paintFonts(); paintPv(); }));
+          own.append(chip);
+        });
+        fontBox.append(grid('dl-own-row', button('上传字体', () => upl.click()), upl), own);
+      }
+
+      function build() {
+        syncers = [];
+        css = node('textarea', 'dl-css'); css.value = c.css || ''; css.spellcheck = false;
+        css.placeholder = '.lili-dl .dl-cur .dl-main .first { color: #ff8fb1; }\n.lili-dl .s-latin { font-style: italic; }\n@keyframes my-in { from { opacity: 0; transform: rotate(-30deg) } }\n.lili-dl .dl-cur .dl-main .dl-ch { animation: my-in .5s calc(var(--i) * 60ms) both; }';
+        css.oninput = () => { dirty = true; paintFoot(); W.clearTimeout(cssT); cssT = W.setTimeout(() => { c.css = css.value; D.bump(); paintPv(); }, 350); };
+        const pv = node('div', 'dl-preview'); pv.append(pvBox);
+        paintFonts();
+        const body = node('div', 'lm-set dl-set');
+        body.append(
+          grid('dl-checks', sw('显示桌面歌词', 'on'), sw('锁定位置', 'locked'), sw('显示翻译', 'trans'), sw('显示下一句', 'twoLine'), sw('通知栏 / 锁屏显示歌词', 'ms')),
+          actions(button('把歌词叫回屏幕上', () => { D.rescue(); build(); }), pipBtn),
+          diag,
+          head('排版'),
+          grid('dl-two', sel('排列', 'vertical', [['0', '横排'], ['1', '竖排']]), sel('对齐', 'align', [['start', '靠左 / 靠上'], ['center', '居中'], ['end', '靠右 / 靠下']])),
+          sl('字号', 'size', 12, 80, 1, v => v + 'px'), sl('翻译字号', 'transSize', 10, 48, 1, v => v + 'px'), sl('粗细', 'weight', 100, 900, 100),
+          sl('字间距', 'spacing', -2, 16, .5, v => v + 'px'), sl('行距', 'lineGap', 1, 2.4, .05, v => v.toFixed(2)), sl('歌词长度', 'width', 20, 100, 1, v => v + '%'),
+          sl('横向位置', 'x', 0, 1, .01, pct), sl('纵向位置', 'y', 0, 1, .01, pct),
+          head('颜色'),
+          grid('dl-colors', col('文字', 'color'), col('已唱', 'hi'), col('描边', 'stroke'), col('发光', 'glow'), col('背景', 'bg')),
+          sl('描边粗细', 'strokeW', 0, 4, .5, v => v + 'px'), sl('发光范围', 'glowR', 0, 30, 1, v => v + 'px'), sl('背景不透明度', 'bgOp', 0, 1, .05, pct),
+          head('字体'), fontBox,
+          head('效果'),
+          sel('出场', 'anim', D.ANIMS), sl('逐字间隔', 'step', 0, 240, 5, v => v + 'ms'),
+          grid('dl-checks', sw('已唱部分变色', 'karaoke'), sw('首字放大', 'first')),
+          sl('首字倍数', 'firstScale', 1, 3, .1, v => v.toFixed(1) + '×'),
+          actions(button('重播效果', paintPv)),
+          head('自定义 CSS'), css,
+          actions(button('样式恢复默认', async () => {
+            if (!(await ask('把桌面歌词的样式恢复默认？字体文件和自定义 CSS 会保留。'))) return;
+            const keep = { on: c.on, folded: c.folded, locked: c.locked, x: c.x, y: c.y, css: c.css };
+            Object.assign(c, D.DEF, keep); changed(); build();
+          }))
+        );
+        const top = sheet.body.scrollTop;
+        sheet.body.replaceChildren(pv, body);
+        sheet.body.scrollTop = top;
+        paintPv();
+      }
+      build();
+      sheet.foot.append(status, saveBtn, button('关闭', () => sheet.requestClose()));
+      paintFoot();
+      D.loadFonts().then(() => { if (dlSheet === sheet) { paintFonts(); paintPv(); } });
+      const onEmit = () => { syncers.forEach(r => r._sync?.()); const t = D.diag(); if (diag.textContent !== t) diag.textContent = t; };
+      LM.listeners.add(onEmit); onEmit();
+      sheet.onClose(() => {
+        LM.listeners.delete(onEmit); W.clearTimeout(cssT); W.clearTimeout(flashT);
+        if (dirty && !saving) D.draft.discard(); else D.draft.end();
+        dlSheet = null;
+      });
+    }
+    let settingsSheet = null;
+    function openMusicSettings() {
+      if (settingsSheet) { settingsSheet.d.focus(); return; }
+      const sheet = openSheet('悬浮窗与播放器设置');
+      settingsSheet = sheet;
+      sheet.d.classList.add('lm-settings-dialog');
+      const closeButton = button('×', () => sheet.close());
+      closeButton.title = '关闭设置'; closeButton.setAttribute('aria-label', '关闭设置');
+      sheet.d.querySelector('.cw-sheet-head').append(closeButton);
+      sheet.body.append(settings());
+      sheet.foot.append(node('span', 'cw-note', '修改自动保存并即时生效'), button('关闭', () => sheet.close()));
+      sheet.onClose(() => { settingsSheet = null; if (panel) render(); });
+    }
+    function settings() {
+      const d = node('div', 'lm-set');
+      const chk = (label, key, after) => { const l = node('label', 'cw-check lm-check'); const c = heartSwitch(!!LM.mc[key], label); c.addEventListener('change', () => { LM.mc[key] = c.checked; LM.saveMc(); after?.(); }); l.append(c, node('span', '', label)); return l; };
+      d.append(chk('后台播放（关掉工作台也继续放）', 'bg'), chk('显示悬浮唱片', 'fab', () => LM.renderFab()), chk('悬浮播放器毛玻璃', 'glass', () => LM.applyLook()));
+      const slider = (label, key, min, max, stepv, fmtv) => {
+        const r = node('input'); r.type = 'range'; r.min = min; r.max = max; r.step = stepv; r.value = LM.mc[key];
+        const out = node('span', 'lm-val', fmtv(LM.mc[key]));
+        r.oninput = () => { LM.mc[key] = +r.value; out.textContent = fmtv(+r.value); LM.applyLook(); LM.renderFab(); };
+        r.onchange = () => LM.saveMc();
+        const row = node('label', 'cw-field lm-slider'); row.append(node('span', '', label), r, out); return row;
+      };
+      d.append(slider('悬浮唱片大小', 'fabSize', 36, 120, 1, v => v + 'px'), slider('播放器不透明度', 'miniOpacity', .2, 1, .01, v => Math.round(v * 100) + '%'), slider('毛玻璃强度', 'blur', 0, 30, 1, v => v + 'px'));
+      const sleep = node('select'); [['0', '定时停止：关'], ['15', '15 分钟后停'], ['30', '30 分钟后停'], ['60', '60 分钟后停'], ['90', '90 分钟后停']].forEach(([v, t]) => { const o = node('option', '', t); o.value = v; sleep.append(o); });
+      sleep.onchange = () => { LM.sleepIn(+sleep.value); notice(+sleep.value ? `${sleep.value} 分钟后自动停止。` : '已取消定时。'); };
+      const url = input('唱片图片链接 https://…', LM.mc.cover);
+      const file = node('input'); file.type = 'file'; file.accept = 'image/*'; file.hidden = true;
+      file.onchange = () => { const f = file.files?.[0]; if (!f) return; const img = new W.Image(); img.onload = () => { const c = DOC.createElement('canvas'), k = Math.min(1, 512 / Math.max(img.width, img.height)); c.width = img.width * k; c.height = img.height * k; c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); LM.mc.cover = c.toDataURL('image/jpeg', .86); LM.saveMc(); url.value = ''; LM.emit(); render(); }; img.src = W.URL.createObjectURL(f); file.value = ''; };
+      d.append(actions(sleep), field('唱片图片', url), actions(button('用这个链接', () => { LM.mc.cover = url.value.trim(); LM.saveMc(); LM.emit(); render(); }), button('上传图片', () => file.click()), button('恢复默认', () => { LM.mc.cover = ''; LM.saveMc(); url.value = ''; LM.emit(); render(); }), file));
+      d.append(node('p', 'cw-note', '网易云可通过上方「登录 / 同步」连接自己的接口服务。其他平台暂不接账号。可以把在官方 App 里下载好的普通音频文件（mp3 / flac 等）连同同名的 .lrc 歌词一起选中导入，歌词会自动配上；也可以导入音频直链、梨梨歌单文件。'));
+      return d;
+    }
+    function render() {
+      if (!panel) return;
+      const scroll = $('.lm-list')?.scrollTop || 0;
+      const p = LM.pl(view) || LM.pl('fav'); view = p.id;
+      const body = $('.lm-body'); body.textContent = '';
+      body.append(playlistBar(), toolsBar(), batchBar());
+      const list = node('div', 'lm-list');
+      const items = p.items.filter(id => LM.songs.has(id));
+      if (!items.length) list.append(node('div', 'cw-empty', view === 'fav' ? '还没有喜欢的歌。在「琴房灯 / 琴房乐队」状态栏点小爱心，歌就会出现在这里。' : '这个歌单还没有歌。'));
+      items.forEach((id, i) => { const el = row(id, p.items.indexOf(id), p); if (el) list.append(el); });
+      body.append(list);
+      list.scrollTop = scroll;
+    }
+    function openPanel(container) {
+      close();
+      panel = node('section'); panel.id = 'lm-panel'; panel.setAttribute('aria-label', '音乐');
+      const now = nowCard(); const body = node('div', 'lm-body');
+      const footer = node('div', 'cw-footer'); footer.append(DOC.createTextNode('音乐 · 梨梨工作台 v3.8.7'));
+      const topTools = node('div', 'cw-toolbar lm-top-tools');
+      const dlLab = node('label', 'cw-check lm-check lm-dl-toggle'), dlSw = heartSwitch(!!LM.mc.dl.on, '桌面歌词');
+      dlSw.addEventListener('change', () => LM.dl.set({ on: dlSw.checked, folded: false }));
+      dlLab.append(dlSw, node('span', '', '桌面歌词'));
+      topTools.append(button('悬浮窗 / 播放器设置', openMusicSettings), dlLab, button('桌面歌词设置', openLyricSettings));
+      panel.append(topTools, now, body, footer); container.append(panel);
+      let lastSig = '';
+      unsub = () => { LM.listeners.delete(fn); };
+      const fn = () => { now.paint(); if (dlSw.checked !== !!LM.mc.dl.on) dlSw.checked = !!LM.mc.dl.on; const sig = LM.st.id + '|' + LM.st.playing + '|' + LM.mc.playlists.map(x => x.items.length).join(','); if (sig !== lastSig) { lastSig = sig; render(); } };
+      LM.listeners.add(fn);
+      render(); now.paint();
+    }
+    function close() { settingsSheet?.close(); unsub?.(); unsub = null; panel?.remove(); panel = null; if (!LM.mc.bg) LM.pause(); }
+    return { open: openPanel, close, canLeave: async () => true, element: () => panel, keep: false, dispose: LM.dispose, openLyricSettings };
+  }
+  modules.music = createMusicModule();
+  LM.dl.setOpener(() => modules.music.openLyricSettings());
+
+  sharedStyle.textContent += `
+.ne-search-dialog .cw-actions{display:flex;gap:8px;flex-wrap:wrap}
+.ne-search-dialog .cw-actions input{flex:1;min-width:140px}
+.ne-search-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px;margin-top:8px}
+.ne-search-info{flex:1 1 180px;min-width:0;overflow-wrap:anywhere}
+/* ─── v3.7 音乐 ─── */
+#cw-hub-body>:is(#lm-panel){position:relative;flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:column;overflow:hidden}
+#lm-panel .lm-now{display:flex;gap:14px;align-items:center;padding:12px 16px;border-bottom:var(--cw-line);flex-shrink:0}
+#lm-panel .lm-disc{width:84px;height:84px}
+#lm-panel .lm-now-main{flex:1;min-width:0}
+#lm-panel .lm-now-t b{display:block;font-size:calc(16px * var(--cw-fs, 1));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#lm-panel .lm-now-t span{font-size:calc(12px * var(--cw-fs, 1));opacity:.75}
+#lm-panel .lm-seek{padding:6px 0 0}
+#lm-panel .lm-ctl{justify-content:flex-start;gap:4px;padding:2px 0 0;flex-wrap:wrap}
+#lm-panel .lm-ctl .md{display:inline-flex;gap:5px;align-items:center;width:auto;padding:0 10px;border-radius:0;font-size:calc(12px * var(--cw-fs, 1));border:var(--cw-line)}
+#lm-panel .lm-ib{display:inline-grid;place-items:center}
+#lm-panel .lm-ib .lm-i{width:16px;height:16px}
+#lm-panel .lm-like.on{color:#e5739c}
+#lm-panel .lm-fab-toggle{margin-left:auto}
+#lm-panel .lm-slider,.lm-settings-dialog .lm-slider{display:flex;align-items:center;gap:8px}
+#lm-panel .lm-slider input,.lm-settings-dialog .lm-slider input{flex:1;accent-color:var(--cw-accent)}
+#lm-panel .lm-val{flex:0 0 3.2em;text-align:right;font-size:calc(12px * var(--cw-fs, 1));opacity:.75}
+#lm-panel .lm-eq{display:inline-flex;align-items:flex-end;gap:2px;height:12px}
+#lm-panel .lm-eq b{width:2px;background:currentColor;animation:lm-eq .9s ease-in-out infinite}
+#lm-panel .lm-eq b:nth-child(2){animation-delay:-.3s}#lm-panel .lm-eq b:nth-child(3){animation-delay:-.6s}
+@keyframes lm-eq{0%,100%{height:3px}50%{height:12px}}
+#lm-panel .lm-vol{display:flex;align-items:center;gap:4px;flex:1;min-width:110px;font-size:14px}
+#lm-panel .lm-body{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+#lm-panel .lm-pls{display:flex;gap:6px;padding:10px 16px 0;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+#lm-panel .lm-pls::-webkit-scrollbar{display:none}
+#lm-panel .lm-pl{flex:0 0 auto;min-height:32px;padding:4px 12px}
+#lm-panel .lm-pl.is-on{background:var(--cw-accent-soft);box-shadow:inset 0 0 0 1px var(--cw-border);font-weight:700}
+#lm-panel .lm-bar{flex-shrink:0}
+#lm-panel .lm-target{flex:0 1 150px;min-width:110px}
+#lm-panel .lm-batch{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 16px;border-bottom:var(--cw-line);flex-shrink:0}
+#lm-panel .lm-batch[hidden]{display:none!important}
+#lm-panel .lm-list{flex:1;min-height:0;overflow:auto;padding:8px 14px;overscroll-behavior:contain}
+#lm-panel .lm-row{display:flex;align-items:center;gap:6px;padding:6px 8px;margin-bottom:6px;flex-wrap:wrap}
+#lm-panel .lm-row.is-now{box-shadow:inset 3px 0 0 var(--cw-accent)}
+#lm-panel .lm-row-main{flex:1;min-width:0;display:flex;align-items:baseline;gap:8px;justify-content:flex-start;text-align:left;border:0!important;background:none!important;padding:4px 2px}
+#lm-panel .lm-row-main b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#lm-panel .lm-row-n{flex:0 0 1.6em;opacity:.6;font-size:calc(12px * var(--cw-fs, 1));text-align:right}
+#lm-panel .lm-row-sub{font-size:calc(11.5px * var(--cw-fs, 1));opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#lm-panel .lm-mini-btn{flex:0 0 auto;min-height:28px;min-width:30px;padding:2px 7px;font-size:calc(12px * var(--cw-fs, 1))}
+#lm-panel .lm-more{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:6px;padding:6px 0 2px 36px}
+#lm-panel .lm-more select{flex:0 1 170px;min-width:120px}
+#lm-panel .lm-set{margin:0 14px 10px;padding:8px 10px;flex-shrink:0;max-height:40%;overflow:auto}
+.cw-dialog.cw-sheet.lm-settings-dialog:not(.is-full){position:fixed;inset:0;margin:auto;width:min(640px,94vw);height:min(720px,86vh);height:min(720px,86dvh);max-height:calc(100dvh - 32px)}
+.lm-settings-dialog .lm-set{display:flex;flex-direction:column;gap:10px;min-width:0}
+.lm-settings-dialog .cw-sheet-body{overflow-y:auto;min-height:0}
+.lm-settings-dialog .lm-slider input{min-width:0}
+#lm-panel .lm-top-tools{flex-shrink:0;margin:0;padding:10px 14px;justify-content:flex-end}
+#lm-panel .lm-check,.lm-settings-dialog .lm-check{display:flex;align-items:center;gap:6px;margin:6px 0}
+/* ─── v3.8 桌面歌词设置 / 音乐 ─── */
+.cw-sheet .dl-h{font-weight:700}
+.dl-settings-dialog .dl-h{margin-top:8px;padding-top:10px;border-top:var(--cw-line)}
+.dl-settings-dialog .dl-preview{position:sticky;top:0;z-index:2;display:grid;place-items:center;min-height:130px;max-height:260px;padding:16px 12px;margin-bottom:8px;overflow:hidden;background:linear-gradient(135deg,#2f3440,#6d6a78 60%,#a89aa8);border:var(--cw-line)}
+.dl-settings-dialog .dl-preview .lili-dl{max-width:100%}
+.dl-settings-dialog .dl-checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0 12px}
+.dl-settings-dialog .dl-two{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 12px}
+.dl-settings-dialog .dl-colors{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px 12px}
+.dl-settings-dialog .dl-color input[type=color]{width:100%;height:34px;padding:2px;border:var(--cw-line);background:none;cursor:pointer}
+.dl-settings-dialog .dl-fonts{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px 12px}
+.dl-settings-dialog .dl-own-row,.dl-settings-dialog .dl-own{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.dl-settings-dialog .dl-chip{display:inline-flex;align-items:center;gap:8px;padding:2px 3px 2px 10px;border:var(--cw-line)}
+.dl-settings-dialog .dl-chip .cw-button{min-height:26px;padding:1px 8px}
+.dl-settings-dialog .dl-status{margin-right:auto}
+.dl-settings-dialog .dl-diag{margin:0;font-size:calc(11.5px * var(--cw-fs, 1));opacity:.65;overflow-wrap:anywhere}
+.dl-settings-dialog .dl-save{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:6.5em}
+.dl-settings-dialog .dl-save .cw-wave-dots{min-width:0;gap:4px;height:1em}
+.dl-settings-dialog .dl-save .cw-wave-dots i{width:4px;height:4px}
+.dl-settings-dialog .dl-save.is-done{opacity:1!important}
+.dl-settings-dialog .dl-css{width:100%;min-height:150px;box-sizing:border-box;font:12.5px/1.5 ui-monospace,Consolas,monospace;resize:vertical}
+#lm-panel .lm-dl-toggle{display:inline-flex;align-items:center;gap:6px;margin:0 4px;white-space:nowrap;cursor:pointer}
+@media(max-width:650px){#lm-panel .lm-now{padding:10px 12px;gap:10px}#lm-panel .lm-disc{width:64px;height:64px}#lm-panel .lm-pls{padding:8px 10px 0}#lm-panel .lm-list{padding:8px 10px}#lm-panel .lm-more{padding-left:0}}
+`;
 
   sharedStyle.textContent += `
 :is(#api-panel,.cw-dialog) .api-key-row{display:flex!important;width:100%;min-width:0;box-sizing:border-box}
