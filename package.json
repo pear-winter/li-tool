@@ -1,7 +1,7 @@
 {
   "name": "lili-workbench-extension",
   "private": true,
-  "version": "3.8.7",
+  "version": "3.9.4",
   "type": "module",
   "scripts": {
     "check": "node --check index.js && node --check workbench.js",

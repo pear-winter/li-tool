@@ -1,9 +1,9 @@
 /**
- * 🍐 梨梨工作台 v3.8.7
+ * 🍐 梨梨工作台 v3.9.4 · 公开版
  * 合并：预设工作台 v1.1 / 世界书工作台 v2.7 / 聊天工作台 v3.4.0（聊天档案馆 + 回复分支）
  * 适配目标：SillyTavern 1.19.0 / 酒馆助手 4.9.3
  * 一个入口、一个面板、顶部四页切换；入口、悬浮图与美化统一共享。
- * 无外部依赖，不修改全局 alert 和 confirm。
+ * 特效页依赖已启用的 li-sparkling 插件；不修改全局 alert 和 confirm。
  */
 export function startWorkbench() {
   'use strict';
@@ -179,17 +179,17 @@ export function startWorkbench() {
       }
     }
   }
-  cfg.lastTab = ['preset', 'api', 'sttheme', 'worldbook', 'archive', 'history', 'tools', 'music', 'beauty'].includes(cfg.lastTab) ? cfg.lastTab : 'preset';
+  cfg.lastTab = ['preset', 'api', 'sttheme', 'worldbook', 'archive', 'history', 'tools', 'music', 'voice', 'effects', 'beauty'].includes(cfg.lastTab) ? cfg.lastTab : 'preset';
   cfg.tabNames = object(cfg.tabNames);
-  cfg.tabOrder = Array.isArray(cfg.tabOrder) ? cfg.tabOrder.filter(n => typeof n === 'string') : [];
+  cfg.tabOrder = Array.isArray(cfg.tabOrder) ? cfg.tabOrder.filter(n => typeof n === 'string' && !['pet','excerpt'].includes(n)) : [];
   cfg.transApi = object(cfg.transApi);
-  cfg.tabHidden = Array.isArray(cfg.tabHidden) ? cfg.tabHidden.filter(n => typeof n === 'string' && n !== 'beauty') : [];
+  cfg.tabHidden = Array.isArray(cfg.tabHidden) ? cfg.tabHidden.filter(n => typeof n === 'string' && !['beauty','pet','excerpt'].includes(n)) : [];
   cfg.apiConfigs = Array.isArray(cfg.apiConfigs) ? cfg.apiConfigs : [];
   cfg.themeShots = object(cfg.themeShots);
   cfg.themeFavs = Array.isArray(cfg.themeFavs) ? cfg.themeFavs.filter(n => typeof n === 'string') : [];
   cfg.themeUsed = object(cfg.themeUsed);
   cfg.tabIcons = Object.fromEntries(Object.entries(object(cfg.tabIcons))
-    .filter(([k, v]) => ['preset', 'api', 'sttheme', 'worldbook', 'archive', 'history', 'tools', 'music', 'beauty'].includes(k) && typeof v === 'string' && /^https?:\/\//i.test(v)));
+    .filter(([k, v]) => ['preset', 'api', 'sttheme', 'worldbook', 'archive', 'history', 'tools', 'music', 'voice', 'effects', 'beauty'].includes(k) && typeof v === 'string' && /^https?:\/\//i.test(v)));
 
   const oldPos = read('ca-fab-pos', null);
   if (cfg.x === null && oldPos) {
@@ -1409,7 +1409,7 @@ export function startWorkbench() {
 
   const THEME_SELECTOR = ':is(#cw-hub, .cw-dialog, .pw-dialog, .wb-dialog)';
   const OLD_THEME_SELECTOR = ':is(#cw-home, #ca-panel, #sb-panel, .cw-dialog)';
-  const CW_SCOPE = ':is(#cw-tabs, #cw-settings-page, #ca-panel, #sb-panel, #api-panel, #st-panel, #tl-panel, #lm-panel, #wp-panel, .cw-dialog)';
+  const CW_SCOPE = ':is(#cw-tabs, #cw-settings-page, #ca-panel, #sb-panel, #api-panel, #st-panel, #tl-panel, #lm-panel, .cw-dialog)';
   const THEME_TEMPLATE = `/* ♡ 四页统一美化：预设 / 世界书 / 聊天档案馆 / 回复分支 / 设置
    下面的颜色变量对全部页面和弹窗生效。
    单独调整某一页时可用：#pw-panel（预设）、#wb-panel（世界书）、
@@ -1734,7 +1734,12 @@ ${CW_SCOPE} button.cw-heart:disabled{opacity:.55;cursor:default}
 .st-card-pic img{display:block;width:100%;height:100%;object-fit:cover}
 .st-card-note{font-size:calc(34px * var(--cw-fs, 1));color:var(--cw-text);opacity:.75}
 .st-card-foot{display:grid;gap:8px;padding:9px 10px 10px}
-.st-card-name{font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st-card-name{font-weight:650;white-space:normal;overflow:visible;overflow-wrap:anywhere;line-height:1.5}
+#st-panel .st-grid.is-list{grid-template-columns:minmax(0,1fr)}
+#st-panel .st-grid.is-list .st-card{display:grid;grid-template-columns:minmax(90px,26%) minmax(0,1fr);align-items:center}
+#st-panel .st-grid.is-list .st-card-foot{min-width:0}
+#cw-hub .lpx-embedded{position:static!important;display:block!important;width:100%!important;max-width:none!important;max-height:none!important;margin:0!important;box-shadow:none!important}
+#cw-hub .lpx-embedded .lpx-page{max-height:none;overflow:visible}
 .st-card-acts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 #st-panel .st-card-acts .cw-button{font-size:calc(12px * var(--cw-fs, 1));min-height:30px;padding:4px 6px}
 .st-card-tag{position:absolute;top:8px;left:8px}
@@ -2687,6 +2692,8 @@ ${THEME_SELECTOR}{
     ['history', '🌿', '回复分支'],
     ['tools', '🧰', '工具'],
     ['music', '🎵', '音乐'],
+    ['voice', '🎙', '配音室'],
+    ['effects', '✨', '特效'],
     ['beauty', '🎀', '控制台']
   ];
   const TAB_NAMES = TABS.map(t => t[0]);
@@ -2702,6 +2709,8 @@ ${THEME_SELECTOR}{
     return all ? order : order.filter(name => name === 'beauty' || !cfg.tabHidden.includes(name));
   }
   const DEFAULT_TAB_ICONS = {
+    voice: 'https://s1.oururl.cn/autoupload/cgoqf/20261002/SNyc/232X345/%E6%B2%90%E6%9E%9C%E7%B4%A0%E6%9D%90_%28130%29.png',
+    effects: 'https://s1.oururl.cn/autoupload/cgoqf/20261002/7ksx/278X247/%E6%B2%90%E6%9E%9C%E7%B4%A0%E6%9D%90_%28102%29.png',
     tools: 'https://s1.oururl.cn/autoupload/cgoqf/20260922/mh3k/315X398/%E6%B2%90%E6%9E%9C%E7%B4%A0%E6%9D%90_%28136%29.png',
     api: 'https://s1.oururl.cn/autoupload/cgoqf/20260923/oPWM/204X238/%E6%B2%90%E6%9E%9C%E7%B4%A0%E6%9D%90_%28115%29.png',
     sttheme: 'https://s1.oururl.cn/autoupload/cgoqf/20260923/ogkh/369X285/%E6%B2%90%E6%9E%9C%E7%B4%A0%E6%9D%90_%2833%29.png',
@@ -11173,6 +11182,68 @@ ${THEME_SELECTOR}{
     if (!Number.isInteger(id) || id < 0) throw Error('没有找到对应楼层。');
     return id;
   }
+  // v3.8.8：只重画改动的那一层，不重载整个聊天；画完把视口留在原地，并轻轻闪一下改过的那层
+  function chatScroller() {
+    const chat = DOC.getElementById('chat');
+    if (chat && chat.scrollHeight > chat.clientHeight + 1) return chat;
+    return DOC.scrollingElement || DOC.documentElement;
+  }
+  function flashMessage(el) {
+    try {
+      el?.animate?.([
+        { boxShadow: 'inset 0 0 0 2px var(--SmartThemeQuoteColor, #e8a)' },
+        { boxShadow: 'inset 0 0 0 2px transparent' }
+      ], { duration: 1400, easing: 'ease-out' });
+    } catch {}
+  }
+  async function refreshOneMessage(ctx, id) {
+    const find = () => DOC.querySelector('#chat .mes[mesid="' + id + '"]');
+    const before = find(), scroller = chatScroller();
+    const anchorTop = before ? before.getBoundingClientRect().top : null;
+    const keep = () => {
+      const el = find();
+      if (el && anchorTop !== null) scroller.scrollTop += el.getBoundingClientRect().top - anchorTop;
+    };
+    const message = ctx.chat?.[id];
+    let ok = false;
+    if (before && message) {
+      try {
+        if (typeof ctx.updateMessageBlock === 'function') {
+          ctx.updateMessageBlock(id, message);
+          ok = true;
+        } else if (typeof ctx.messageFormatting === 'function') {
+          const box = before.querySelector('.mes_text');
+          if (box) {
+            box.innerHTML = ctx.messageFormatting(message.mes, message.name, message.is_system, message.is_user, id);
+            ok = true;
+          }
+        }
+      } catch (error) {
+        console.warn('[梨梨工作台] 单层重绘失败，改为重新载入聊天', error);
+        ok = false;
+      }
+    }
+    if (!ok) {
+      // 兜底：只能整段重载时，载完后滚回改过的那一层
+      await refreshChat(ctx);
+      await new Promise(r => W.setTimeout(r, 120));
+      const el = find();
+      if (el) { el.scrollIntoView({ block: 'center' }); flashMessage(el); }
+      return;
+    }
+    keep();
+    // 通知其他功能（正则美化与酒馆助手前端）这一层改过了，让它们只处理这一层
+    try {
+      const es = ctx.eventSource, et = ctx.eventTypes || ctx.event_types;
+      if (es && et) {
+        if (et.MESSAGE_EDITED) await es.emit(et.MESSAGE_EDITED, id);
+        if (et.MESSAGE_UPDATED) await es.emit(et.MESSAGE_UPDATED, id);
+      }
+    } catch (error) { console.warn('[梨梨工作台] 修改事件广播失败', error); }
+    keep();
+    W.requestAnimationFrame(() => { keep(); flashMessage(find()); });
+    W.setTimeout(keep, 300);   // 图片 / 美化 iframe 晚到撑高时再校正一次
+  }
   async function editSelectedBody(range, text, frame = null) {
     try {
       if (writing || isGenerating()) throw Error('请等当前生成或保存结束后再修改。');
@@ -11205,8 +11276,8 @@ ${THEME_SELECTOR}{
           if (Array.isArray(message.swipes) && Number.isInteger(message.swipe_id) && message.swipe_id >= 0 && message.swipe_id < message.swipes.length) message.swipes[message.swipe_id] = value;
           await commitChat(live, next);
           sheet.close();
-          await refreshChat(live);
-          notice('正文修改已保存。');
+          await refreshOneMessage(context() || live, id);
+          topTip('正文修改已保存');
         } catch (error) { notice(error.message); }
         finally { if (saving) writing = false; saving = false; save.disabled = false; }
       }, 'cw-primary');
@@ -11283,6 +11354,25 @@ ${THEME_SELECTOR}{
   function createApiModule() {
     let panel = null, disposed = false, busy = false;
     const pickedConfigs = new Set();
+    let secretsPromise = null;
+    const secrets = () => secretsPromise ||= new W.Function('return import("/scripts/secrets.js")')();
+    const normalizeUrl = value => String(value||'').trim().replace(/\/+$/, '').replace(/\/(?:models|chat\/completions)$/, '');
+    cfg.apiKeyCache = object(cfg.apiKeyCache);
+    const secretIdentity = (sm, key) => {
+      const active = Array.isArray(sm.secret_state?.[key]) ? sm.secret_state[key].find(s=>s.active) : null;
+      return active?.id ? key + ':' + active.id : '';
+    };
+    async function readCurrentKey() {
+      const sm = await secrets();
+      const secretKey = sm.resolveSecretKey?.();
+      if (!secretKey) return {key:'',note:'当前来源没有可读取的 API 密钥。'};
+      const live=DOC.getElementById(secretKey)?.value?.trim();
+      const identity=secretIdentity(sm,secretKey);
+      const value=live || (identity && cfg.apiKeyCache[identity]) || await sm.findSecret(secretKey);
+      if(value){if(identity){cfg.apiKeyCache[identity]=value;saveCfg();}return {key:value,note:'密钥已保存在本浏览器，可点击显示。'};}
+      return {key:'',note:'酒馆未允许读取这把密钥，或没有已保存密钥。请手动粘贴并保存一次；不会用空白覆盖原密钥。'};
+    }
+
     const FIELDS = {
       url: '#custom_api_url_text',
       key: '#api_key_custom',
@@ -11321,7 +11411,7 @@ ${THEME_SELECTOR}{
     }
     function currentConf() {
       return {
-        url: readField('url'), key: readField('key'), model: readField('model'), post: readField('post'),
+        url: readField('url'), key: readField('key'), model: q('#custom_model_id')?.value || readField('model'), post: readField('post'),
         includeBody: readField('includeBody'), excludeBody: readField('excludeBody'), includeHeaders: readField('includeHeaders')
       };
     }
@@ -11331,40 +11421,52 @@ ${THEME_SELECTOR}{
     }
 
     async function pushToTavern(conf, { connect = true } = {}) {
-      const source = q('#chat_completion_source');
-      if (source && source.value !== 'custom') {
-        source.value = 'custom';
-        source.dispatchEvent(new W.Event('change', { bubbles: true }));
-        await sleep(200);
+      const address = normalizeUrl(conf.url);
+      const parsed = new W.URL(address);
+      if (!['http:','https:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.search || parsed.hash) throw Error('接口网址格式不正确。');
+      const secret = String(conf.key || '').trim();
+      if (!secret) throw Error('这份配置没有本地密钥，请先编辑配置，粘贴密钥并保存。不会借用上一份配置的密钥。');
+      const previous=cfg.apiCurrent;
+      cfg.apiCurrent={...conf,url:address,key:secret};
+      if(!saveCfg()){cfg.apiCurrent=previous;throw Error('本地密钥保存失败，未切换连接。');}
+      const sm=await secrets();
+      const secretKey=sm.SECRET_KEYS.CUSTOM;
+      // A saved secret ID is reused only when it belongs to this exact local value.
+      const identity=conf.secretId && secretKey+':'+conf.secretId;
+      const exists=Array.isArray(sm.secret_state[secretKey]) && sm.secret_state[secretKey].some(s=>s.id===conf.secretId);
+      let id=conf.secretId;
+      if(identity && exists && cfg.apiKeyCache[identity]===secret){
+        await apiPostRaw('/api/secrets/rotate',{key:secretKey,id});
+        await sm.readSecretState();
+      }else{
+        id=await sm.writeSecret(secretKey,secret,conf.name || '梨梨工作台');
+        if(!id)throw Error('酒馆没有成功保存密钥，连接已停止；本地配置仍保留。');
       }
-      if (conf.url !== undefined && !setField('url', conf.url)) {
-        throw Error('没找到酒馆的自定义接口地址输入框，请先在酒馆里把 API 选成「聊天补全 · 自定义」。');
+      cfg.apiKeyCache[secretKey+':'+id]=secret;
+      conf.secretId=id; cfg.apiCurrent={...conf,url:address,key:secret};
+      saveCfg();
+      const change=(el,value)=>{if(!el)return;el.value=value;el.dispatchEvent(new W.Event('change',{bubbles:true}));};
+      const main=q('#main_api'); if(main && main.value!=='openai'){change(main,'openai');await sleep(100);}
+      const source=q('#chat_completion_source');
+      if(source && source.value!=='custom'){change(source,'custom');await sleep(100);}
+      if(!setField('url',address))throw Error('没找到酒馆的自定义接口网址输入框。');
+      // writeSecret clears the native field; do not refill it and cause a second asynchronous write.
+      for(const name of ['post','includeBody','excludeBody','includeHeaders'])setField(name,conf[name]||'');
+      const applyModel=()=>{
+        if(!conf.model)return;
+        const select=q(FIELDS.model);
+        if(select){if(![...select.options].some(o=>o.value===conf.model)){const o=node('option','',conf.model);o.value=conf.model;select.append(o);}change(select,conf.model);}
+        const manual=q('#custom_model_id');if(manual){manual.value=conf.model;manual.dispatchEvent(new W.Event('input',{bubbles:true}));}
+      };
+      applyModel();
+      if(connect){
+        const btn=q('#api_button_openai');if(!btn)throw Error('没找到酒馆的连接按钮。');
+        if(!W.jQuery)throw Error('酒馆连接组件尚未就绪，请稍后重试。');
+        let timer;
+        try{await Promise.race([Promise.resolve(W.jQuery(btn).triggerHandler('click')),new Promise((_,reject)=>{timer=W.setTimeout(()=>reject(Error('连接检查超时，配置已保存，请检查酒馆状态灯后重试。')),30000);})]);}
+        finally{W.clearTimeout(timer);applyModel();}
       }
-      if (conf.key !== undefined) setField('key', conf.key);
-      for (const key of ['post', 'includeBody', 'excludeBody', 'includeHeaders']) {
-        if (conf[key] !== undefined && conf[key] !== null) setField(key, conf[key]);
-      }
-      if (connect) {
-        const btn = q('#api_button_openai');
-        if (!btn) throw Error('没找到酒馆的「连接」按钮。');
-        btn.click();
-        for (let i = 0; i < 45; i++) {
-          await sleep(200);
-          if (stModels().length) break;
-        }
-      }
-      if (conf.model) {
-        const select = q(FIELDS.model);
-        if (select) {
-          if (![...select.options].some(o => o.value === conf.model)) {
-            const option = node('option', '', conf.model);
-            option.value = conf.model;
-            select.append(option);
-          }
-          select.value = conf.model;
-          select.dispatchEvent(new W.Event('change', { bubbles: true }));
-        }
-      }
+      context()?.saveSettingsDebounced?.();
     }
 
     function setBusy(on) {
@@ -11381,12 +11483,25 @@ ${THEME_SELECTOR}{
       const url = input('接口网址 https://…', conf.url || '');
       const key = input('密钥 sk-…', conf.key || '');
       key.type = 'password';
+      key.autocomplete = 'off';
+      let keyEdited=false;key.addEventListener('input',()=>{keyEdited=true;});
+      const keyNote=node('p','cw-note');
+      if(conf._current){
+        keyNote.textContent='正在读取当前密钥…';
+        readCurrentKey().then(result=>{if(!keyEdited && wrap.isConnected){key.value=result.key;keyNote.textContent=result.note;}}).catch(()=>{if(wrap.isConnected)keyNote.textContent='密钥读取失败，请手动填入并保存。';});
+      }
       const showKey = button('显示', () => {
         key.type = key.type === 'password' ? 'text' : 'password';
         showKey.textContent = key.type === 'password' ? '显示' : '隐藏';
       });
       const keyRow = node('div', 'api-key-row');
-      keyRow.append(key, showKey);
+      const recoverKey=button('读取当前酒馆密钥',async()=>{
+        if(q('#chat_completion_source')?.value!=='custom' || normalizeUrl(url.value)!==normalizeUrl(readField('url'))){notice('请先确认当前酒馆正在使用这份配置的网址，再读取对应密钥。');return;}
+        recoverKey.disabled=true;
+        try{const result=await readCurrentKey();keyNote.textContent=result.note;if(result.key){key.value=result.key;keyEdited=true;key.dispatchEvent(new W.Event('input',{bubbles:true}));}}
+        catch{keyNote.textContent='密钥读取失败，请手动填入。';}finally{recoverKey.disabled=false;}
+      });
+      keyRow.append(key, showKey, recoverKey);
       const model = node('select');
       const post = node('select');
       for (const [value, label] of postChoices()) {
@@ -11462,7 +11577,7 @@ ${THEME_SELECTOR}{
         node('label', 'api-label', '筛选模型'), modelFilter,
         node('label', 'api-label', '模型'), modelRow,
         node('label', 'api-label', '提示词后处理'), post);
-      wrap.append(grid, fetchStatus, actions(manual, manualAdd));
+      wrap.append(grid, keyNote, fetchStatus, actions(manual, manualAdd));
 
       const extra = node('details', 'api-extra');
       extra.append(node('summary', '', '附加参数'));
@@ -11532,6 +11647,7 @@ ${THEME_SELECTOR}{
         button('保存', () => {
           const data = form.read();
           if (!data.url) { notice('请先填网址。'); return; }
+          if (!data.key.trim()) { notice('请先填入密钥，或点击「读取当前酒馆密钥」，再保存。'); return; }
           const list = cfg.apiConfigs.slice();
           const value = {
             ...(source || {}),
@@ -11595,6 +11711,7 @@ ${THEME_SELECTOR}{
         button('保存所选', () => {
           const data = form.read();
           if (!data.url) { notice('请先填网址。'); return; }
+          if (!data.key.trim()) { notice('请先填入密钥，或点击「读取当前酒馆密钥」，再保存。'); return; }
           const chosen = [...picked];
           if (!chosen.length) { notice('请先点爱心选择模型。'); return; }
           const base = prefix.value.trim();
@@ -11632,7 +11749,16 @@ ${THEME_SELECTOR}{
       head.append(node('div', 'ca-sec-title', '当前配置'),
         node('span', 'api-source', source ? (source.selectedOptions?.[0]?.textContent?.trim() || source.value) : '读不到接口来源'),
         button('重新读取', render, 'ca-sec-btn'));
-      const form = buildForm(currentConf());
+      const nativeCustom=source?.value==='custom';
+      const form = buildForm({...currentConf(),_current:nativeCustom});
+      if(!nativeCustom){
+        const nativeKey=input('正在读取当前来源的密钥…');nativeKey.type='password';nativeKey.readOnly=true;
+        const nativeNote=node('p','cw-note');
+        const reveal=button('显示当前密钥',()=>{nativeKey.type=nativeKey.type==='password'?'text':'password';reveal.textContent=nativeKey.type==='password'?'显示当前密钥':'隐藏当前密钥';});
+        now.append(node('p','cw-note','当前使用的来源密钥：'),actions(nativeKey,reveal),nativeNote);
+        readCurrentKey().then(result=>{if(nativeKey.isConnected){nativeKey.value=result.key;nativeKey.placeholder='未能读取密钥';nativeNote.textContent=result.note;}}).catch(()=>{nativeNote.textContent='读取失败，请在酒馆中检查密钥。';});
+        now.append(node('p','cw-note','下方为自定义兼容 API 配置，应用后会切换到自定义来源。'));
+      }
       now.append(head, form.el, actions(
         button('应用到酒馆', async () => {
           setBusy(true);
@@ -11693,7 +11819,7 @@ ${THEME_SELECTOR}{
             setBusy(true);
             try {
               await pushToTavern(conf);
-              notice('已连接到「' + conf.name + '」。');
+              notice('已切换到「' + conf.name + '」并完成连接检查；实际可用性请以酒馆状态灯和发送结果为准。');
             } catch (error) {
               notice('连接失败：' + error.message);
             } finally {
@@ -11701,7 +11827,7 @@ ${THEME_SELECTOR}{
               render();
             }
           }, 'cw-primary'),
-          button('编辑', () => configDialog(conf, '编辑配置')),
+          button('编辑 / 查看密钥', () => configDialog(conf, '编辑配置')),
           up, down,
           button('删除', async () => {
             if (!await ask('删除配置「' + conf.name + '」？')) return;
@@ -11775,6 +11901,148 @@ ${THEME_SELECTOR}{
 
   modules.api = createApiModule();
 
+  // 特效全部由已安装的 li-sparkling 插件提供；工作台只保留稳定连接层。
+/** Thin client for the installed plugin's stable UI API. No effects or settings are copied. */
+function createWorkbenchEffects({ window: W, node, button }) {
+  const repo = 'https://github.com/pear-winter/li-sparkling';
+  let panel = null, slot = null, status = null, connected = null, mounted = null;
+  let timer = 0, queued = 0, lastMessage = '';
+  const plugin = () => {
+    const api = W.__liSparkling;
+    return api?.owner === 'li-sparkling' && api.apiVersion === 1 &&
+      typeof api.mount === 'function' && typeof api.unmount === 'function' &&
+      api.isAvailable?.() !== false ? api : null;
+  };
+  function release() {
+    // Unmount only this workbench's view; never stop effects or touch another window.
+    try { connected?.unmount(slot); } catch {}
+    connected = mounted = null;
+  }
+  function message(text) {
+    if (lastMessage === text && slot.childNodes.length) return;
+    lastMessage = text;
+    const box = node('div', 'cw-empty');
+    box.append(node('p', '', text));
+    const link = node('a', '', '打开 li-sparkling 仓库');
+    link.href = repo; link.target = '_blank'; link.rel = 'noopener noreferrer';
+    box.append(link, node('p', 'cw-note', '在酒馆扩展中安装或更新，并启用插件；刷新后这里自动连接。'), button('重新连接', sync));
+    slot.replaceChildren(box);
+  }
+  function sync() {
+    if (!panel?.isConnected) return;
+    const api = plugin();
+    if (!api) {
+      release();
+      status.textContent = '点击与拖尾特效';
+      const older = W.__liliPixelV2?.owner === 'li-sparkling';
+      message(older ? '请将 li-sparkling 更新到 v2.2.0 或更新版本。' : '缺少已启用的 li-sparkling 插件，暂时不能使用特效管理器。');
+      return;
+    }
+    if (connected === api && mounted?.isConnected && slot.contains(mounted)) return;
+    release(); slot.replaceChildren(); lastMessage = '';
+    status.textContent = '点击与拖尾特效 · 插件 v' + (api.version || '?');
+    try {
+      connected = api; mounted = api.mount(slot);
+      if (!mounted || !slot.contains(mounted)) throw Error('插件没有返回管理器页面');
+    } catch (error) {
+      release(); message('暂时没有连接成功：' + (error?.message || String(error)));
+    }
+  }
+  function schedule() {
+    if (!queued && panel) queued = W.setTimeout(() => { queued = 0; sync(); }, 40);
+  }
+  function open(container) {
+    close();
+    panel = node('section'); panel.id = 'pear-effects-plugin-panel';
+    panel.setAttribute('aria-label', '插件特效管理器');
+    panel.style.cssText = 'width:100%;min-width:0;min-height:0;overflow:auto;flex:1 1 auto;';
+    status = node('div', 'cw-note'); status.setAttribute('role', 'status');
+    slot = node('div'); slot.className = 'pear-effects-plugin-slot';
+    panel.append(status, slot); container.append(panel);
+    W.addEventListener('li-sparkling:change', schedule);
+    timer = W.setInterval(sync, 1500); sync();
+  }
+  function close() {
+    W.clearInterval(timer); W.clearTimeout(queued); timer = queued = 0;
+    W.removeEventListener('li-sparkling:change', schedule);
+    release(); panel?.remove(); panel = slot = status = null; lastMessage = '';
+  }
+  return { keep: false, open, close, dispose: close, canLeave: async () => true, element: () => panel };
+}
+
+  modules.effects = createWorkbenchEffects({ window: W, node, button });
+
+/** Thin client for the installed plugin's stable UI API. No effects or settings are copied. */
+function createWorkbenchVoice({ window: W, node, button }) {
+  const repo = 'https://github.com/pear-winter/li-voice-studio';
+  let panel = null, slot = null, status = null, connected = null, mounted = null;
+  let timer = 0, queued = 0, lastMessage = '';
+  const plugin = () => {
+    const api = W.__liVoiceStudio;
+    return api?.owner === 'li-voice-studio' && api.apiVersion === 1 &&
+      typeof api.mount === 'function' && typeof api.unmount === 'function' &&
+      api.isAvailable?.() !== false ? api : null;
+  };
+  function release() {
+    // Unmount only this workbench's view; never stop effects or touch another window.
+    try { connected?.unmount(slot); } catch {}
+    connected = mounted = null;
+  }
+  function message(text) {
+    if (lastMessage === text && slot.childNodes.length) return;
+    lastMessage = text;
+    const box = node('div', 'cw-empty');
+    box.append(node('p', '', text));
+    const link = node('a', '', '打开 li-voice-studio 仓库');
+    link.href = repo; link.target = '_blank'; link.rel = 'noopener noreferrer';
+    box.append(link, node('p', 'cw-note', '在酒馆扩展中安装或更新，并启用插件；刷新后这里自动连接。'), button('重新连接', sync));
+    slot.replaceChildren(box);
+  }
+  function sync() {
+    if (!panel?.isConnected) return;
+    const api = plugin();
+    if (!api) {
+      release();
+      status.textContent = '配音、存储与接口管理';
+      const older = !!W.__liliMiniVoiceV1;
+      message(older ? '请将 li-voice-studio 更新到 v1.10.0 或更新版本。' : '缺少已启用的 li-voice-studio 插件，暂时不能使用配音室。');
+      return;
+    }
+    if (connected === api && mounted?.isConnected && slot.contains(mounted)) return;
+    release(); slot.replaceChildren(); lastMessage = '';
+    status.textContent = '配音、存储与接口管理 · 插件 v' + (api.version || '?');
+    try {
+      connected = api; mounted = api.mount(slot);
+      if (!mounted || !slot.contains(mounted)) throw Error('插件没有返回管理器页面');
+    } catch (error) {
+      release(); message('暂时没有连接成功：' + (error?.message || String(error)));
+    }
+  }
+  function schedule() {
+    if (!queued && panel) queued = W.setTimeout(() => { queued = 0; sync(); }, 40);
+  }
+  function open(container) {
+    close();
+    panel = node('section'); panel.id = 'pear-voice-plugin-panel';
+    panel.setAttribute('aria-label', '插件配音室');
+    panel.style.cssText = 'width:100%;min-width:0;min-height:0;overflow:auto;flex:1 1 auto;';
+    status = node('div', 'cw-note'); status.setAttribute('role', 'status');
+    slot = node('div'); slot.className = 'pear-voice-plugin-slot';
+    panel.append(status, slot); container.append(panel);
+    W.addEventListener('li-voice-studio:change', schedule);
+    timer = W.setInterval(sync, 1500); sync();
+  }
+  function close() {
+    W.clearInterval(timer); W.clearTimeout(queued); timer = queued = 0;
+    W.removeEventListener('li-voice-studio:change', schedule);
+    release(); panel?.remove(); panel = slot = status = null; lastMessage = '';
+  }
+  return { keep: false, open, close, dispose: close, canLeave: async () => true, element: () => panel };
+}
+
+  modules.voice = createWorkbenchVoice({ window: W, node, button });
+
+
   modules.preset = createPresetModule();
   /* ═════════════ 🎨 酒馆美化 ═════════════ */
   function createThemeModule() {
@@ -11796,7 +12064,8 @@ ${THEME_SELECTOR}{
       ['blur_strength', '模糊强度', 0, 20, 1],
       ['shadow_width', '文本阴影宽度', 0, 5, 1]
     ];
-    const SORTS = [['used', '排序：最近使用'], ['edited', '排序：最近修改'], ['name', '排序：名称']];
+    cfg.themeOrder = Array.isArray(cfg.themeOrder) ? cfg.themeOrder : [];
+    const SORTS = [['custom', '排序：自定义'], ['used', '排序：最近使用'], ['edited', '排序：最近修改'], ['name', '排序：名称']];
 
     let panel = null, disposed = false, themes = [], current = null, editing = null, busy = false, loadError = '';
     let draft = null, draftBase = '';
@@ -12028,6 +12297,10 @@ ${THEME_SELECTOR}{
     }
 
     function sortedThemes() {
+      if(sortMode === 'custom') {
+        const order=[...cfg.themeOrder.filter(n=>themes.some(t=>t.name===n)),...themes.map(t=>t.name).filter(n=>!cfg.themeOrder.includes(n))];
+        return themes.slice().sort((a,b)=>order.indexOf(a.name)-order.indexOf(b.name));
+      }
       const fav = name => cfg.themeFavs.includes(name) ? 1 : 0;
       const stamp = sortMode === 'used' ? cfg.themeUsed : sortMode === 'edited' ? cfg.themeEdited : null;
       return themes.slice().sort((a, b) => fav(b.name) - fav(a.name)
@@ -12063,6 +12336,19 @@ ${THEME_SELECTOR}{
       foot.append(node('div', 'st-card-name', theme.name));
       const acts = node('div', 'st-card-acts');
       acts.append(button('应用', () => applyTheme(theme), 'cw-primary'), button('编辑', () => openEditor(theme.name)));
+      if(sortMode === 'custom') {
+        const ordered=sortedThemes(),at=ordered.findIndex(t=>t.name===theme.name);
+        for(const [label,step] of [['↑ 上移',-1],['↓ 下移',1]]) {
+          const move=button(label,()=>{
+            const next=ordered.map(t=>t.name),target=at+step;
+            if(target<0||target>=next.length)return;
+            [next[at],next[target]]=[next[target],next[at]];
+            const previous=cfg.themeOrder;cfg.themeOrder=next;
+            if(!saveCfg())cfg.themeOrder=previous;
+            render();
+          });move.disabled=at+step<0||at+step>=ordered.length;acts.append(move);
+        }
+      }
       foot.append(acts);
       if (theme.name === current) box.append(node('span', 'ca-tag st-card-tag', '使用中'));
       if (bulk.on) {
@@ -12108,7 +12394,11 @@ ${THEME_SELECTOR}{
           button('导入主题', importThemes),
           button('批量管理', () => { bulk.on = true; bulk.selected.clear(); render(); }));
       }
-      const grid = node('div', 'st-grid');
+      bar.append(button(cfg.themeView === 'list' ? '切换网格视图' : '切换竖排视图',()=>{
+        const previous=cfg.themeView;cfg.themeView=cfg.themeView==='list'?'grid':'list';
+        if(!saveCfg())cfg.themeView=previous;render();
+      }));
+      const grid = node('div', 'st-grid' + (cfg.themeView==='list'?' is-list':''));
       if (loadError) grid.append(node('div', 'cw-empty', '读取主题失败：' + loadError));
       else if (!themes.length) grid.append(node('div', 'cw-empty', '没有读到酒馆主题'));
       for (const theme of sortedThemes()) grid.append(card(theme));
@@ -12361,6 +12651,7 @@ ${THEME_SELECTOR}{
         await moveShot(old, next);
         for (const map of [cfg.themeUsed, cfg.themeEdited]) if (map[old]) { map[next] = map[old]; delete map[old]; }
         cfg.themeFavs = cfg.themeFavs.map(n => n === old ? next : n);
+        cfg.themeOrder = cfg.themeOrder.map(n => n === old ? next : n);
         saveCfg();
         if (wasLive) {
           const select = DOC.querySelector('#themes');
@@ -12524,6 +12815,20 @@ ${THEME_SELECTOR}{
     const open = new Set();
     const ui = {};
 
+    let activeGroup = '*';
+    function groupData() { cfg.toolGroups = object(cfg.toolGroups); const key = JSON.stringify([kind, scope, scope === 'global' ? '' : target]); return cfg.toolGroups[key] ||= { names: [], assignments: {}, collapsed: [] }; }
+    function itemGroup(item) { return groupData().assignments[item.id || nameOf(item)] || ''; }
+    function assignGroup(list, name) { const data = groupData(); list.forEach(item => { const key = item.id || nameOf(item); if (name) data.assignments[key] = name; else delete data.assignments[key]; }); saveCfg(); paint(); }
+    function groupControls(put) {
+      const data = groupData(), select = node('select'); select.setAttribute('aria-label', '条目分组');
+      for (const [value, label] of [['*','全部分组'],['','未分组'],...data.names.map(n=>[n,n])]) { const o=node('option','',label);o.value=value;select.append(o); } select.value=activeGroup;
+      select.onchange=()=>{activeGroup=select.value;paintList();};
+      const targetGroup=node('select');targetGroup.setAttribute('aria-label','将选中条目加入分组');targetGroup.append(node('option','','将选中移到…'));targetGroup.firstChild.value='__none';
+      for(const name of ['',...data.names]){const o=node('option','',name||'未分组');o.value=name;targetGroup.append(o);}targetGroup.onchange=()=>{const chosen=items().filter(item=>selected.has(item));if(!chosen.length){notice('请先选中条目。');targetGroup.value='__none';return;}assignGroup(chosen,targetGroup.value);};
+      put(select,targetGroup,button('新建分组',async()=>{const name=(await dialog('分组名称','prompt','新分组'))?.trim();if(!name)return;if(data.names.includes(name))return notice('已有同名分组。');data.names.push(name);activeGroup=name;saveCfg();paint();}),button('分组改名',async()=>{if(!activeGroup||activeGroup==='*')return notice('先选择一个分组。');const old=activeGroup,name=(await dialog('新分组名称','prompt',old))?.trim();if(!name||name===old)return;if(data.names.includes(name))return notice('已有同名分组。');data.names=data.names.map(n=>n===old?name:n);for(const key in data.assignments)if(data.assignments[key]===old)data.assignments[key]=name;activeGroup=name;saveCfg();paint();}),button('删除分组',()=>{if(!activeGroup||activeGroup==='*')return notice('先选择一个分组。');const old=activeGroup;data.names=data.names.filter(n=>n!==old);for(const key in data.assignments)if(data.assignments[key]===old)delete data.assignments[key];activeGroup='*';saveCfg();paint();notice('分组已删除，条目移到未分组。');}));
+    }
+    function orderedPlugins() { const order=Array.isArray(cfg.pluginOrder)?cfg.pluginOrder:[];return [...plugins].sort((a,b)=>{const ai=order.indexOf(a.name),bi=order.indexOf(b.name);return (ai<0?order.length:ai)-(bi<0?order.length:bi);}); }
+    function movePlugin(plugin,delta) { const names=orderedPlugins().map(p=>p.name),from=names.indexOf(plugin.name),to=from+delta;if(to<0||to>=names.length)return;[names[from],names[to]]=[names[to],names[from]];cfg.pluginOrder=names;saveCfg();paintList(); }
     const saved = object(cfg.tools);
     if (KINDS.some(k => k[0] === saved.kind)) kind = saved.kind;
     if (SCOPES.some(k => k[0] === saved.scope)) scope = saved.scope;
@@ -13129,7 +13434,7 @@ ${THEME_SELECTOR}{
       scopeSel.addEventListener('change', async () => {
         const next = scopeSel.value;
         if (!await confirmLeave()) { scopeSel.value = scope; return; }
-        scope = next; target = defaultTarget(); remember(); await loadWork();
+        scope = next; activeGroup = '*'; target = defaultTarget(); remember(); await loadWork();
       });
       put(scopeSel);
       if (scope !== 'global') {
@@ -13148,12 +13453,13 @@ ${THEME_SELECTOR}{
         targetSel.addEventListener('change', async () => {
           const next = targetSel.value;
           if (!await confirmLeave()) { targetSel.value = target; return; }
-          target = next; remember(); await loadWork();
+          target = next; activeGroup = '*'; remember(); await loadWork();
         });
         put(targetSel);
       }
       const chosen = () => items().filter(i => selected.has(i));
       ui.save = button('保存修改', () => saveWork(), 'cw-primary');
+      groupControls(put);
       put(search, ui.save,
         button('放弃修改', async () => { if (dirty && !await ask('放弃「' + where() + '」还没保存的修改？')) return; await loadWork(); }),
         button('刷新', async () => { if (!await confirmLeave()) return; await loadWork(); }),
@@ -13189,6 +13495,7 @@ ${THEME_SELECTOR}{
       return '';
     }
     function matchItem(item) {
+      if (activeGroup !== '*' && itemGroup(item) !== activeGroup) return false;
       if (!query) return true;
       const q = query.toLowerCase();
       return JSON.stringify([nameOf(item), item.findRegex, item.replaceString, item.content, item.info]).toLowerCase().includes(q);
@@ -13230,13 +13537,13 @@ ${THEME_SELECTOR}{
       const all = items();
       const shown = all.filter(matchItem);
       if (!shown.length) { list.append(node('div', 'cw-empty', all.length ? '没有匹配的条目' : '这里还没有' + (kind === 'regex' ? '正则' : '脚本') + '，点「＋ 新增」或「导入」。')); return; }
-      for (const item of shown) list.append(itemCard(item));
+      if (activeGroup !== '*') shown.forEach(item=>list.append(itemCard(item))); else for (const group of [...groupData().names,'']) { const members=shown.filter(item=>itemGroup(item)===group);if(!members.length)continue;const box=node('details','tl-group'),summary=node('summary','', (group||'未分组')+' · '+members.length);box.open=!groupData().collapsed.includes(group);box.append(summary);members.forEach(item=>box.append(itemCard(item)));const collapseData=groupData();box.ontoggle=()=>{if(!box.isConnected)return;const data=collapseData;data.collapsed=data.collapsed.filter(n=>n!==group);if(!box.open)data.collapsed.push(group);saveCfg();};list.append(box); }
       list.scrollTop = top;
     }
 
     function itemCard(item) {
       const card = node('div', 'cw-list-item tl-item' + (isOn(item) ? '' : ' is-off'));
-      const head = node('div', 'cw-list-head');
+      const head = node('div', 'cw-list-head tl-entry-head');
       const pick = heartSwitch(selected.has(item), '选择「' + nameOf(item) + '」');
       pick.addEventListener('change', () => { pick.checked ? selected.add(item) : selected.delete(item); paintStatus(); });
       const expanded = open.has(item);
@@ -13244,10 +13551,11 @@ ${THEME_SELECTOR}{
       const folder = kind === 'script' ? folderOf.get(item) : '';
       const power = button(isOn(item) ? '已启用' : '已停用', () => { setOn(item, !isOn(item)); touch(); paintList(); }, 'tl-power' + (isOn(item) ? ' is-on' : ''));
       power.title = '点一下切换启用 / 停用';
-      head.append(pick, name);
-      if (folder) head.append(node('span', 'tl-tag', '📁 ' + folder));
+      name.title=nameOf(item);head.append(pick, name);
+      const groupSelect=node('select');groupSelect.setAttribute('aria-label','条目所属分组');for(const value of ['',...groupData().names]){const o=node('option','',value||'未分组');o.value=value;groupSelect.append(o);}groupSelect.value=itemGroup(item);groupSelect.onchange=()=>assignGroup([item],groupSelect.value);const groupRow=node('label','tl-entry-group');groupRow.append(node('span','','分组'),groupSelect);
+      if (folder) groupRow.append(node('span', 'tl-tag', '📁 ' + folder));
       head.append(power, button('▲', () => move(item, -1), 'tl-mini'), button('▼', () => move(item, 1), 'tl-mini'));
-      card.append(head);
+      card.append(head,groupRow);
       if (!expanded) return card;
       const body = node('div', 'cw-list-body');
       const areaField = (key, label, rows, get = () => String(item[key] ?? ''), set = v => { item[key] = v; }) => {
@@ -13320,7 +13628,7 @@ ${THEME_SELECTOR}{
     function paintPlugins(list) {
       list.append(node('p', 'cw-note tl-hint', '酒馆的插件只有全局一种，不能按预设或角色分别开关。启用、停用、更新、删除后都要刷新网页才生效。'));
       if (loadError) { list.append(node('div', 'cw-empty', '读取失败：' + loadError)); return; }
-      const shown = plugins.filter(matchPlugin);
+      const shown = orderedPlugins().filter(matchPlugin);
       if (!plugins.length) { list.append(node('div', 'cw-empty', '正在读取…')); return; }
       if (!shown.length) { list.append(node('div', 'cw-empty', '没有匹配的插件')); return; }
       const typeName = { system: '系统', local: '本地', global: '全局' };
@@ -13337,7 +13645,7 @@ ${THEME_SELECTOR}{
         if (p.update === 'error' && p.error) info.append(node('div', 'tl-plugin-meta tl-plugin-err', p.error));
         if (p.update === 'outdated') card.classList.add('is-outdated');
         const power = button(p.on ? '已启用' : '已停用', () => setPluginOn([p], !p.on), 'tl-power' + (p.on ? ' is-on' : ''));
-        head.append(pick, info, power);
+        head.append(pick, info, power, button('↑',()=>movePlugin(p,-1),'tl-mini'),button('↓',()=>movePlugin(p,1),'tl-mini'));
         const acts = node('div', 'tl-plugin-acts');
         if (p.type !== 'system') {
           acts.append(button('检查更新', () => checkUpdates([p]), 'tl-mini'),
@@ -13362,7 +13670,7 @@ ${THEME_SELECTOR}{
         const b = button(label, async () => {
           if (value === kind) return;
           if (!await confirmLeave()) return;
-          kind = value; query = '';
+          kind = value; query = ''; activeGroup = '*';
           if (kind !== 'plugin' && scope !== 'global' && !target) target = defaultTarget();
           remember(); await loadWork();
         }, 'tl-seg-btn');
@@ -13374,7 +13682,7 @@ ${THEME_SELECTOR}{
       ui.list = node('div', 'tl-list');
       const footer = node('div', 'cw-footer');
       ui.status = node('span');
-      footer.append(ui.status, DOC.createTextNode(' · 🧰 工具 · 梨梨工作台 v3.8.7'));
+      footer.append(ui.status, DOC.createTextNode(' · 🧰 工具 · 梨梨工作台 v3.9.4'));
       panel.append(ui.seg, ui.bar, ui.list, footer);
       panel.addEventListener('keydown', event => {
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); void saveWork(); }
@@ -14032,8 +14340,9 @@ ${THEME_SELECTOR}{
     }, read(CFG_KEY, {}));
     if (!mc.playlists.some(p => p.id === 'fav')) mc.playlists.unshift({ id: 'fav', name: '我喜欢', items: [] });
     if (!mc.playlists.some(p => p.id === 'mine')) mc.playlists.splice(1, 0, { id: 'mine', name: '我的音乐', items: [] });
+    if (!mc.playlists.some(p => p.id === 'voice')) mc.playlists.splice(2, 0, { id: 'voice', name: '我的语音', items: [] });
     let dlDraftBase = null;   // v3.8：桌面歌词设置打开时，未点保存的样式不写进存储
-    const saveMc = () => { try { W.localStorage.setItem(CFG_KEY, JSON.stringify(dlDraftBase ? { ...mc, dl: dlDraftBase } : mc)); } catch { notice('音乐设置没保存上：浏览器存储空间不足。'); } };
+    const saveMc = () => { try { W.localStorage.setItem(CFG_KEY, JSON.stringify(dlDraftBase ? { ...mc, dl: dlDraftBase } : mc)); return true; } catch { notice('音乐设置没保存上：浏览器存储空间不足。'); return false; } };
     /* 只在内容真的变了才写 DOM，避免每 250ms 整块重写引起卡顿 */
     const patch = (el, k, v) => { if (!el || el['_lm_' + k] === v) return; el['_lm_' + k] = v; if (k === 'text') el.textContent = v; else if (k === 'html') el.innerHTML = v; else if (k === 'bg') el.style.backgroundImage = v; else if (k === 'title') el.title = v; };
     const LOAD_HTML = '<span class="lm-load" aria-hidden="true"><i></i><i></i><i></i></span>';
@@ -14055,17 +14364,31 @@ ${THEME_SELECTOR}{
       const likedIds = all.filter(liked).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0)).map(r => r.id);
       fav.items = fav.items.filter(id => likedIds.includes(id));
       likedIds.forEach(id => { if (!fav.items.includes(id)) fav.items.unshift(id); });   // 状态栏里点小爱心的歌自动进「我喜欢」
-      mc.playlists.forEach(p => { p.items = p.items.filter(id => songs.has(id)); });
+      mc.playlists.forEach(p => { const hidden = new Set(p.items.flatMap(id => songs.get(id)?.mix?.parts || [])); p.items = p.items.filter(id => songs.has(id) && !hidden.has(id)); });
       saveMc(); emit();
     }
     async function putSong(rec) { await tx('readwrite', s => s.put(rec)); songs.set(rec.id, rec); }
     async function putSongs(records) { await tx('readwrite', store => records.forEach(r => store.put(r))); records.forEach(r => songs.set(r.id, r)); }
+    function restoreMix(playlist, record) {
+      const at = playlist.items.indexOf(record.id); if (at < 0 || !record.mix) return;
+      const parts = record.mix.parts.filter(id => songs.has(id));
+      playlist.items = playlist.items.filter(id => id !== record.id && !parts.includes(id));
+      if (playlist.id === record.mix.playlistId && Array.isArray(record.mix.originalItems)) {
+        const original = record.mix.originalItems;
+        for (let i = 0; i < original.length; i++) { const id = original[i]; if (!parts.includes(id)) continue; const next = original.slice(i + 1).find(x => !parts.includes(x) && playlist.items.includes(x)); const index = next ? playlist.items.indexOf(next) : playlist.items.length; playlist.items.splice(index, 0, id); }
+      } else playlist.items.splice(Math.min(at, playlist.items.length), 0, ...parts);
+    }
     async function delSongs(ids) {
-      await tx('readwrite', s => ids.forEach(id => s.delete(id)));
+      if ([...songs.values()].some(r => r.mix && !ids.includes(r.id) && r.mix.parts.some(id => ids.includes(id)))) { notice('这些原片段仍属于大配音，请先拆开对应的大配音再删除。'); return false; }
+      const before = mc.playlists.map(p => [p, [...p.items]]);
+      for (const id of ids) { const rec = songs.get(id); if (rec?.mix) mc.playlists.forEach(p => restoreMix(p, rec)); }
+      mc.playlists.forEach(p => { p.items = p.items.filter(id => !ids.includes(id)); });
+      if (!saveMc()) { before.forEach(([p, items]) => p.items = items); return false; }
+      try { await tx('readwrite', s => ids.forEach(id => s.delete(id))); }
+      catch (error) { before.forEach(([p, items]) => p.items = items); saveMc(); notice('删除失败，原片段已保留：' + (error?.message || error)); return false; }
       ids.forEach(id => { songs.delete(id); if (urls.has(id)) { W.URL.revokeObjectURL(urls.get(id)); urls.delete(id); } });
-      mc.playlists.forEach(p => { p.items = p.items.filter(id => !ids.includes(id)); }); saveMc();
       if (st.id && ids.includes(st.id)) stop();
-      notifyLib(); emit();
+      notifyLib(); emit(); return true;
     }
     async function setLiked(id, on) {
       const r = songs.get(id); if (!r) return;
@@ -14197,7 +14520,7 @@ ${THEME_SELECTOR}{
       const q = queue(), name = '《' + (rec.title || '无题') + '》';
       failStreak++;
       if (q.length <= 1 || failStreak >= q.length) {
-        failStreak = 0; W.clearInterval(st.tick); emit();
+        failStreak = 0; W.clearInterval(st.tick); emit(); 
         topTip(q.length <= 1 ? name + '放不了：' + reason : '这个歌单里的歌暂时都放不了，已经停下', 3600);
         return;
       }
@@ -14206,6 +14529,7 @@ ${THEME_SELECTOR}{
       W.setTimeout(() => { if (st.rec === rec && !st.playing) step(1, true, true); }, 300);
     }
     async function play() {
+      W.dispatchEvent(new W.CustomEvent('lili-audio-focus', { detail: { owner: 'pear-workbench' } }));
       if (!st.rec) { const q = queue(); if (!q.length) { notice('这个歌单还没有歌。'); return; } load(q[0]); }
       const revision = ++playRevision, rec = st.rec;
       if (rec.kind === 'audio') {
@@ -14239,11 +14563,11 @@ ${THEME_SELECTOR}{
         st.playing = true;
       }
       W.clearInterval(st.tick); st.tick = W.setInterval(progress, 250);
-      media(); emit();
+      media(); emit(); 
     }
     function halt() { playRevision++; W.clearTimeout(loadWatch); st.loading = false; st.playing = false; W.clearInterval(st.timer); W.clearInterval(st.tick); eng?.hush(); audioEl?.pause(); }
-    function pause() { if (st.rec?.kind === 'audio') st.pos = (audioEl?.currentTime || 0) * 1000; halt(); emit(); }
-    function stop() { halt(); st.id = null; st.rec = null; st.model = null; st.arr = []; st.pos = 0; st.total = 0; emit(); }
+    function pause() { if (st.rec?.kind === 'audio') st.pos = (audioEl?.currentTime || 0) * 1000; halt(); emit();  }
+    function stop() { halt(); st.id = null; st.rec = null; st.model = null; st.arr = []; st.pos = 0; st.total = 0; emit();  }
     function toggle() { st.playing ? pause() : play(); }
     function seek(ms) {
       st.pos = Math.max(0, Math.min(st.total || 0, ms));
@@ -14319,7 +14643,8 @@ ${THEME_SELECTOR}{
     const blobToData = b => new Promise(res => { const r = new W.FileReader(); r.onload = () => res(r.result); r.readAsDataURL(b); });
     async function exportSongs(ids, name, withAudio) {
       const out = [];
-      for (const id of ids) {
+      const expanded = [...new Set(ids.flatMap(id => [id, ...(songs.get(id)?.mix?.parts || [])]))];
+      for (const id of expanded) {
         const r = songs.get(id); if (!r) continue;
         const c = { ...r }; delete c.blob;
         if (r.blob && withAudio) c.data = await blobToData(r.blob);
@@ -14344,7 +14669,7 @@ ${THEME_SELECTOR}{
         rec.liked = plId === 'fav' ? true : (songs.get(rec.id)?.liked ?? rec.liked ?? false);
         await putSong(rec); if (s.perSong) mc.perSong[rec.id] = s.perSong; ids.push(rec.id);
       }
-      addTo(plId, ids); return ids.length;
+      const hidden = new Set(ids.flatMap(id => songs.get(id)?.mix?.parts || []));addTo(plId, ids.filter(id => !hidden.has(id))); return ids.length;
     }
     function addTo(plId, ids) {
       const p = pl(plId); if (!p) return;
@@ -14938,7 +15263,7 @@ ${THEME_SELECTOR}{
     const onResize = () => { renderFab(); placeMini(); dlPlace(); };
     W.addEventListener('resize', onResize);
 
-    loadSongs().then(() => { if (mc.cur?.id && songs.has(mc.cur.id)) { st.plId = mc.cur.pl || mc.view; load(mc.cur.id); } renderFab(); emit(); });
+    const ready = loadSongs().then(() => { if (mc.cur?.id && songs.has(mc.cur.id)) { st.plId = mc.cur.pl || mc.view; load(mc.cur.id); } renderFab(); emit(); });
 
     function dispose() {
       halt(); W.removeEventListener('lili-music-changed', onLib); W.removeEventListener('resize', onResize);
@@ -14947,7 +15272,7 @@ ${THEME_SELECTOR}{
       try { ac?.close(); } catch {}
     }
     return {
-      mc, st, songs, pl, MODES, INST, GROUPS, has, selName, fmt, saveMc, listeners, emit, loadSongs,
+      ready, mc, st, songs, pl, MODES, INST, GROUPS, has, selName, fmt, saveMc, listeners, emit, loadSongs,
       playAt, toggle, play, pause, step, seek, setMode, setVolume, sleepIn, rearrange, selOf,
       setLiked, delSongs, addTo, putSong, putSongs, removeFrom, importAudioFiles, importLinks, importListFile, exportSongs, copyLyrics, lyricsNow,
       renderFab, toggleMini, coverUrl, DEF_COVER, dispose, newId, icon, applyLook, parseLrc,
@@ -14958,7 +15283,7 @@ ${THEME_SELECTOR}{
   })();
 
   function createMusicModule() {
-    let panel = null, unsub = null, view = LM.mc.view || 'fav', picked = new Set(), openRow = null;
+    let panel = null, unsub = null, view = LM.mc.view || 'fav', picked = new Set(), openRow = null, musicQuery = '', musicSearchOpen = false;
     const $ = s => panel?.querySelector(s);
     function nowCard() {
       const box = node('div', 'lm-now');
@@ -14993,6 +15318,11 @@ ${THEME_SELECTOR}{
       for (const p of LM.mc.playlists) {
         const b = button(p.name + ' ' + p.items.length, () => { view = p.id; LM.mc.view = view; LM.saveMc(); picked.clear(); render(); }, 'lm-pl' + (p.id === view ? ' is-on' : ''));
         bar.append(b);
+        if (p.id === 'fav') {
+          const toggle = button('', () => { musicSearchOpen = !musicSearchOpen; if (!musicSearchOpen) musicQuery = ''; render(); if (musicSearchOpen) $('.lm-search-row input')?.focus(); }, 'lm-pl lm-search-toggle');
+          toggle.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>';
+          toggle.title = toggle.getAttribute('aria-label') || '搜索已加入的音乐'; toggle.setAttribute('aria-label', '搜索已加入的音乐'); toggle.setAttribute('aria-expanded', String(musicSearchOpen)); toggle.setAttribute('aria-controls', 'lm-library-search'); bar.append(toggle);
+        }
       }
       const fabBtn = button(LM.mc.fab ? '悬浮唱片：开' : '悬浮唱片：关', () => { LM.mc.fab = !LM.mc.fab; LM.saveMc(); LM.renderFab(); render(); }, 'lm-pl lm-fab-toggle' + (LM.mc.fab ? ' is-on' : ''));
       bar.append(button('＋ 新建歌单', async () => {
@@ -15023,7 +15353,7 @@ ${THEME_SELECTOR}{
           const withAudio = hasAudio ? await dialog('要把本地音频文件一起打包进去吗？（文件会变大）', 'confirm') : false;
           const n = await LM.exportSongs(ids, p.name, withAudio); notice(`导出了 ${n} 首。`);
         }), fileA, fileL);
-      if (!['fav', 'mine'].includes(view)) {
+      if (!['fav', 'mine', 'voice'].includes(view)) {
         bar.append(button('改名', async () => { const n = (await dialog('歌单新名字', 'prompt', p.name))?.trim(); if (n) { p.name = n; LM.saveMc(); render(); } }),
           button('删除歌单', async () => { if (!await ask(`删除歌单「${p.name}」？（歌本身还留在「我的音乐」和其他歌单里）`)) return; LM.mc.playlists = LM.mc.playlists.filter(x => x !== p); view = 'fav'; LM.mc.view = view; LM.saveMc(); render(); }, 'cw-danger'));
       }
@@ -15032,7 +15362,7 @@ ${THEME_SELECTOR}{
     function batchBar() {
       const p = LM.pl(view), bar = node('div', 'lm-batch');
       bar.hidden = !picked.size;
-      bar.append(node('span', '', `已选 ${picked.size} 首`),
+      bar.append(node('span', '', `已选 ${picked.size} 首`), button('合成大配音', openVoiceMix, 'cw-primary'),
         button(picked.size === p.items.length ? '全不选' : '全选', () => { picked = picked.size === p.items.length ? new Set() : new Set(p.items); render(); }),
         (() => { const s = node('select'); s.append(node('option', '', '加入歌单…')); LM.mc.playlists.filter(x => x.id !== view).forEach(x => { const o = node('option', '', x.name); o.value = x.id; s.append(o); });
           s.onchange = () => { if (s.value) { LM.addTo(s.value, [...picked]); notice('已加入「' + LM.pl(s.value).name + '」'); picked.clear(); render(); } }; return s; })(),
@@ -15040,6 +15370,70 @@ ${THEME_SELECTOR}{
         button('彻底删除', async () => { if (!await ask(`彻底删除这 ${picked.size} 首？所有歌单里都会去掉。`)) return; await LM.delSongs([...picked]); picked.clear(); render(); }, 'cw-danger'));
       return bar;
     }
+    /* Local, reversible voice mixes. Original records are retained in the library. */
+    let mixSheet = null;
+    function downloadLocalAudio(record) {
+      if (!record.blob) return notice('这首不是本地音频，请先下载并导入。');
+      const url = W.URL.createObjectURL(record.blob), a = node('a');
+      a.href = url; a.download = (record.title || '配音').replace(/[\\/:*?"<>|]/g, '_') + (record.blob.type.includes('wav') ? '.wav' : '.mp3');
+      DOC.body.append(a); a.click(); a.remove(); W.setTimeout(() => W.URL.revokeObjectURL(url), 30000);
+    }
+    function openVoiceMix() {
+      const target = LM.pl(view), ordered = target.items.filter(id => picked.has(id));
+      if (ordered.length < 2) return notice('请先选择至少两段配音。');
+      if (ordered.length > 40) return notice('一次最多合成 40 段配音。');
+      if (ordered.some(id => { const r = LM.songs.get(id); return !r || r.kind !== 'audio' || !r.blob || r.mix; })) return notice('请选择本地配音或音频。已合成的配音请先拆开；在线歌曲需先下载导入。');
+      mixSheet?.close(); const sheet = openSheet('合成大配音'); mixSheet = sheet;
+      sheet.d.classList.add('lm-mix-sheet');
+      let busy = false, cancelled = false, bgmFile = null;
+      const title = input('给大配音起个名字', '我的大配音'); title.setAttribute('aria-label', '大配音名称');
+      const list = node('div', 'lm-mix-order'), bgm = node('select'); bgm.setAttribute('aria-label', '背景音乐');
+      bgm.append(node('option', '', '不加 BGM')); bgm.firstChild.value = '';
+      for (const r of LM.songs.values()) if (r.kind === 'audio' && r.blob && !ordered.includes(r.id)) { const o = node('option', '', r.title || '未命名'); o.value = r.id; bgm.append(o); }
+      const upload = node('input'); upload.type = 'file'; upload.accept = 'audio/*'; upload.setAttribute('aria-label', '上传背景音乐');
+      const volume = node('input'); volume.type = 'range'; volume.min = '0'; volume.max = '100'; volume.value = '18'; volume.setAttribute('aria-label', 'BGM 音量');
+      const volumeText = node('span', 'cw-note', '18%'); volume.oninput = () => volumeText.textContent = volume.value + '%';
+      const gap = node('input'); gap.type = 'number'; gap.min = '0'; gap.max = '10'; gap.step = '.1'; gap.value = '0'; gap.setAttribute('aria-label', '片段间隔秒数');
+      const state = node('p', 'cw-note', '原片段会在当前歌单中收起，拆开后恢复。'); state.setAttribute('role', 'status');
+      function drawOrder() { list.replaceChildren(); ordered.forEach((id, i) => { const row = node('div', 'cw-actions'); row.append(node('span', '', (i + 1) + ' · ' + LM.songs.get(id).title)); const up = button('↑ 上移', () => { [ordered[i - 1], ordered[i]] = [ordered[i], ordered[i - 1]]; drawOrder(); }), down = button('↓ 下移', () => { [ordered[i + 1], ordered[i]] = [ordered[i], ordered[i + 1]]; drawOrder(); }); up.disabled = busy || i === 0; down.disabled = busy || i === ordered.length - 1; up.setAttribute('aria-label', '上移片段 ' + (i + 1)); down.setAttribute('aria-label', '下移片段 ' + (i + 1)); row.append(up, down); list.append(row); }); }
+      upload.onchange = () => { const f = upload.files[0]; if (!f) return; if (f.size > 50 * 1024 * 1024) { upload.value = ''; return notice('背景音乐最大 50 MB。'); } bgmFile = f; let option = [...bgm.options].find(o => o.value === '__file'); if (!option) { option = node('option'); option.value = '__file'; bgm.append(option); } option.textContent = '上传 · ' + f.name; bgm.value = '__file'; };
+      const close = button('取消', () => sheet.close());
+      const make = button('合成并保存', async () => {
+        if (busy) return; const spacing = Number(gap.value); if (!Number.isFinite(spacing) || spacing < 0 || spacing > 10) return notice('片段间隔须为 0–10 秒。');
+        busy = true; for (const e of sheet.body.querySelectorAll('input,select,button')) e.disabled = true; make.disabled = true; close.textContent = '取消合成';
+        const check = () => { if (cancelled || disposed) throw Error('已取消合成。'); };
+        try {
+          const records = ordered.map(id => LM.songs.get(id)), bgmRecord = bgm.value === '__file' ? { title: bgmFile?.name, blob: bgmFile } : LM.songs.get(bgm.value);
+          const totalBytes = records.reduce((n, r) => n + r.blob.size, 0) + (bgmRecord?.blob?.size || 0);
+          if (totalBytes > 100 * 1024 * 1024) throw Error('本次音频总量超过 100 MB，请分批合成。');
+          const Offline = W.OfflineAudioContext || W.webkitOfflineAudioContext; if (!Offline) throw Error('当前浏览器不支持本地音频合成。');
+          const decoder = new Offline(2, 1, 24000), buffers = []; let duration = 0;
+          for (let i = 0; i < records.length; i++) { check(); state.textContent = '正在读取片段 ' + (i + 1) + ' / ' + records.length; const buffer = await decoder.decodeAudioData(await records[i].blob.arrayBuffer()); check(); duration += buffer.duration + (i ? spacing : 0); if (!Number.isFinite(duration) || duration > 600) throw Error('大配音最长 10 分钟，请分成几段合成。'); buffers.push(buffer); }
+          if (duration <= 0) throw Error('音频为空。');
+          let background = null; if (bgmRecord?.blob) { state.textContent = '正在读取背景音乐…'; background = await decoder.decodeAudioData(await bgmRecord.blob.arrayBuffer()); check(); }
+          const offline = new Offline(2, Math.ceil(duration * 24000), 24000); let offset = 0;
+          for (const buffer of buffers) { const source = offline.createBufferSource(); source.buffer = buffer; source.connect(offline.destination); source.start(offset); offset += buffer.duration + spacing; }
+          if (background) { const source = offline.createBufferSource(), gain = offline.createGain(); source.buffer = background; source.loop = true; const level = Number(volume.value) / 100, fade = Math.min(.5, duration / 4); gain.gain.setValueAtTime(0, 0); gain.gain.linearRampToValueAtTime(level, fade); gain.gain.setValueAtTime(level, duration - fade); gain.gain.linearRampToValueAtTime(0, duration); source.connect(gain); gain.connect(offline.destination); source.start(0); source.stop(duration); }
+          state.textContent = '正在合成声音与 BGM…'; const rendered = await offline.startRendering(); check();
+          const left = rendered.getChannelData(0), right = rendered.getChannelData(1); let peak = 1;
+          for (let i = 0; i < rendered.length; i++) peak = Math.max(peak, Math.abs(left[i]), Math.abs(right[i]));
+          const output = new ArrayBuffer(44 + rendered.length * 4), wav = new DataView(output), word = (at, text) => [...text].forEach((c, i) => wav.setUint8(at + i, c.charCodeAt(0)));
+          word(0, 'RIFF'); wav.setUint32(4, output.byteLength - 8, true); word(8, 'WAVE'); word(12, 'fmt '); wav.setUint32(16, 16, true); wav.setUint16(20, 1, true); wav.setUint16(22, 2, true); wav.setUint32(24, 24000, true); wav.setUint32(28, 96000, true); wav.setUint16(32, 4, true); wav.setUint16(34, 16, true); word(36, 'data'); wav.setUint32(40, output.byteLength - 44, true);
+          for (let i = 0; i < rendered.length; i++) { if (!(i % 131072)) { check(); state.textContent = '正在保存音频 ' + Math.round(i / rendered.length * 100) + '%'; await new Promise(resolve => W.setTimeout(resolve, 0)); } wav.setInt16(44 + i * 4, Math.max(-32768, Math.min(32767, Math.round(left[i] / peak * 32767))), true); wav.setInt16(46 + i * 4, Math.max(-32768, Math.min(32767, Math.round(right[i] / peak * 32767))), true); }
+          check(); if (!LM.pl(target.id) || ordered.some(id => !target.items.includes(id) || !LM.songs.has(id))) throw Error('原歌单发生变化，请重新选择后合成。');
+          const originalItems = [...target.items], id = LM.newId('voice-mix');
+          const record = { id, kind: 'audio', source: 'li-voice-mix', title: title.value.trim() || '我的大配音', artist: '配音合辑 · ' + records.length + ' 段', blob: new W.Blob([output], { type: 'audio/wav' }), liked: target.id === 'fav', savedAt: Date.now(), mix: { version: 1, parts: [...ordered], playlistId: target.id, originalItems, gap: spacing, bgmName: bgmRecord?.title || '', bgmVolume: background ? Number(volume.value) / 100 : 0 } };
+          await LM.putSong(record); if (cancelled || disposed) { await LM.delSongs([id]); throw Error('已取消合成。'); }
+          const first = target.items.findIndex(id => ordered.includes(id)); target.items = target.items.filter(id => !ordered.includes(id)); target.items.splice(first, 0, id);
+          if (!LM.saveMc()) { target.items = originalItems; await LM.delSongs([id]); throw Error('歌单设置没保存成功，原片段已保留。'); }
+          picked.clear(); LM.emit(); W.dispatchEvent(new W.CustomEvent('lili-music-changed', { detail: { from: 'workbench' } })); sheet.close(); render(); notice('大配音已保存。点「更多」可以下载 WAV 或拆开。');
+        } catch (error) { if (!cancelled) state.textContent = '未能合成：' + (error?.message || error); }
+        finally { busy = false; if (!cancelled) { for (const e of sheet.body.querySelectorAll('input,select,button')) e.disabled = false; drawOrder(); make.disabled = false; close.textContent = '取消'; } }
+      }, 'cw-primary');
+      sheet.body.append(field('大配音名称', title), node('p', 'cw-note', '用上移 / 下移调整播放顺序。最多 40 段、10 分钟；在本机合成，不会重新调用配音 API。'), list, field('片段之间停顿（秒）', gap), field('背景音乐', bgm), field('也可上传 BGM', upload), field('BGM 音量', volume), volumeText, node('p', 'cw-note', 'BGM 会循环铺满，开头和结尾轻轻淡入淡出。'), state);
+      sheet.foot.append(close, make); drawOrder(); sheet.onClose(() => { cancelled = true; if (mixSheet === sheet) mixSheet = null; });
+    }
+
     function row(id, i, p) {
       const r = LM.songs.get(id); if (!r) return null;
       const el = node('div', 'cw-list-item lm-row' + (LM.st.id === id ? ' is-now' : ''));
@@ -15063,6 +15457,8 @@ ${THEME_SELECTOR}{
       const add = node('select'); add.append(node('option', '', '加入歌单…'));
       LM.mc.playlists.filter(x => x.id !== p.id).forEach(x => { const o = node('option', '', x.name); o.value = x.id; add.append(o); });
       add.onchange = () => { if (add.value) { LM.addTo(add.value, [r.id]); notice('已加入「' + LM.pl(add.value).name + '」'); add.value = ''; } };
+      if (r.blob) box.append(button('下载音频', () => downloadLocalAudio(r)));
+      if (r.mix) box.append(node('p', 'cw-note', '合辑 · ' + r.mix.parts.length + ' 段' + (r.mix.bgmName ? ' · BGM：' + r.mix.bgmName : '')), button('拆开大配音', async () => { if (await LM.delSongs([r.id])) { notice('已拆开，原配音已恢复。'); render(); } }));
       box.append(add, button('置顶', () => { p.items = [r.id, ...p.items.filter(x => x !== r.id)]; LM.saveMc(); render(); }));
       if (r.kind !== 'audio') {
         const sel = node('select'); sel.title = '编制';
@@ -15295,14 +15691,15 @@ ${THEME_SELECTOR}{
       const scroll = $('.lm-list')?.scrollTop || 0;
       const p = LM.pl(view) || LM.pl('fav'); view = p.id;
       const body = $('.lm-body'); body.textContent = '';
-      body.append(playlistBar(), toolsBar(), batchBar());
+      const search = input('搜索歌名、音色、配音正文或歌词…', musicQuery); search.type = 'search'; search.setAttribute('aria-label', '搜索已加入的音乐'); search.oninput = () => { musicQuery = search.value; paintMusicResults(); }; const searchRow=field('搜索当前歌单', search);searchRow.id='lm-library-search';searchRow.classList.add('lm-search-row');searchRow.hidden=!musicSearchOpen;search.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();musicSearchOpen=false;musicQuery='';render();$('.lm-search-toggle')?.focus();}};body.append(playlistBar(), searchRow, toolsBar(), batchBar());
       const list = node('div', 'lm-list');
-      const items = p.items.filter(id => LM.songs.has(id));
-      if (!items.length) list.append(node('div', 'cw-empty', view === 'fav' ? '还没有喜欢的歌。在「琴房灯 / 琴房乐队」状态栏点小爱心，歌就会出现在这里。' : '这个歌单还没有歌。'));
+      const normalized = musicQuery.trim().normalize('NFKC').toLocaleLowerCase(); const items = p.items.filter(id => { const r = LM.songs.get(id); return r && (!normalized || [r.title, r.artist, r.text, r.lrc, r.mix?.bgmName].join(' ').normalize('NFKC').toLocaleLowerCase().includes(normalized)); });
+      if (!items.length) list.append(node('div', 'cw-empty', normalized ? '没有匹配的音乐或配音。' : view === 'fav' ? '还没有喜欢的歌。在「琴房灯 / 琴房乐队」状态栏点小爱心，歌就会出现在这里。' : '这个歌单还没有歌。'));
       items.forEach((id, i) => { const el = row(id, p.items.indexOf(id), p); if (el) list.append(el); });
       body.append(list);
       list.scrollTop = scroll;
     }
+    function paintMusicResults() { const list = $('.lm-list'); if (!list) return; const p = LM.pl(view), query = musicQuery.trim().normalize('NFKC').toLocaleLowerCase(); list.replaceChildren(); const ids = p.items.filter(id => { const r = LM.songs.get(id); return r && (!query || [r.title, r.artist, r.text, r.lrc, r.mix?.bgmName].join(' ').normalize('NFKC').toLocaleLowerCase().includes(query)); }); ids.forEach(id => list.append(row(id, p.items.indexOf(id), p))); if (!ids.length) list.append(node('div','cw-empty',query?'没有匹配的音乐或配音。':'歌单还是空的。')); }
     function openPanel(container) {
       close();
       panel = node('section'); panel.id = 'lm-panel'; panel.setAttribute('aria-label', '音乐');
@@ -15320,11 +15717,40 @@ ${THEME_SELECTOR}{
       LM.listeners.add(fn);
       render(); now.paint();
     }
-    function close() { settingsSheet?.close(); unsub?.(); unsub = null; panel?.remove(); panel = null; if (!LM.mc.bg) LM.pause(); }
+    function close() { musicSearchOpen=false;musicQuery='';mixSheet?.close(); settingsSheet?.close(); unsub?.(); unsub = null; panel?.remove(); panel = null; if (!LM.mc.bg) LM.pause(); }
     return { open: openPanel, close, canLeave: async () => true, element: () => panel, keep: false, dispose: LM.dispose, openLyricSettings };
   }
   modules.music = createMusicModule();
   LM.dl.setOpener(() => modules.music.openLyricSettings());
+
+  // Stable local bridge: copied audio remains playable when the voice plugin is disabled.
+  const voicePlaylistBridge = {
+    owner: 'pear-workbench', apiVersion: 1, ready: LM.ready,
+    async ids() { await LM.ready; return (LM.pl('voice')?.items || []).flatMap(id => { const row = LM.songs.get(id); return row?.mix ? row.mix.parts.map(part => LM.songs.get(part)?.voiceStudioId).filter(Boolean) : row?.voiceStudioId ? [row.voiceStudioId] : []; }); },
+    async add(item) {
+      await LM.ready;
+      if (disposed) throw Error('工作台已关闭，请重新打开。');
+      if (!item || typeof item.id !== 'string' || !item.id || item.id.length > 200 || !item.blob || typeof item.blob.arrayBuffer !== 'function' || !item.blob.size || item.blob.size > 100 * 1024 * 1024) throw Error('配音数据无效。');
+      const id = 'li-voice:' + item.id, old = LM.songs.get(id);
+      const rec = old || { id, kind: 'audio', source: 'li-voice-studio', voiceStudioId: item.id, title: String(item.title || '配音').slice(0, 500), artist: String(item.voiceName || '配音室').slice(0, 200), text: String(item.text || '').slice(0, 100000), blob: item.blob, liked: false, savedAt: Date.now() };
+      await LM.putSong(rec);
+      if (!LM.pl('voice')) LM.mc.playlists.push({ id: 'voice', name: '我的语音', items: [] });
+      LM.addTo('mine', [id]); if (!LM.pl('voice').items.some(part => LM.songs.get(part)?.mix?.parts.includes(id))) LM.addTo('voice', [id]);
+      if (!LM.saveMc()) throw Error('歌单设置保存失败，请检查浏览器存储空间。');
+      return id;
+    },
+    async canRemove(recordId) { await LM.ready;return !LM.pl('voice').items.some(id => LM.songs.get(id)?.mix?.parts.includes('li-voice:' + recordId)); },
+    async remove(recordId) { await LM.ready;if(!await this.canRemove(recordId))throw Error('请先拆开大配音再取消原片段收藏。'); if (disposed) throw Error('工作台已关闭。'); LM.removeFrom('voice', ['li-voice:' + recordId]); if (!LM.saveMc()) throw Error('歌单设置保存失败。'); },
+    open() { return openHub('music'); }
+  };
+  W.__pearVoicePlaylist = voicePlaylistBridge;
+  LM.ready.then(() => { if (!disposed) W.dispatchEvent(new W.Event('pear-workbench:voice-ready')); });
+  const onVoiceAudioFocus = event => { if (event.detail?.owner === 'li-voice-studio') LM.pause(); };
+  W.addEventListener('lili-audio-focus', onVoiceAudioFocus);
+  cleanups.push(() => { W.removeEventListener('lili-audio-focus', onVoiceAudioFocus); if (W.__pearVoicePlaylist === voicePlaylistBridge) { delete W.__pearVoicePlaylist; W.dispatchEvent(new W.Event('pear-workbench:voice-ready')); } });
+
+
+
 
   sharedStyle.textContent += `
 .ne-search-dialog .cw-actions{display:flex;gap:8px;flex-wrap:wrap}
@@ -15353,6 +15779,10 @@ ${THEME_SELECTOR}{
 #lm-panel .lm-eq b:nth-child(2){animation-delay:-.3s}#lm-panel .lm-eq b:nth-child(3){animation-delay:-.6s}
 @keyframes lm-eq{0%,100%{height:3px}50%{height:12px}}
 #lm-panel .lm-vol{display:flex;align-items:center;gap:4px;flex:1;min-width:110px;font-size:14px}
+#lm-panel .lm-search-row{display:flex;flex-direction:column;align-items:stretch;align-self:stretch;flex:none;width:100%;max-width:none;box-sizing:border-box}
+#lm-panel .lm-search-row[hidden]{display:none!important}
+#lm-panel .lm-search-row input{display:block;width:100%!important;max-width:none!important;min-width:0;box-sizing:border-box;flex:none}
+#lm-panel .lm-search-toggle{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;flex:none}
 #lm-panel .lm-body{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 #lm-panel .lm-pls{display:flex;gap:6px;padding:10px 16px 0;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
 #lm-panel .lm-pls::-webkit-scrollbar{display:none}
@@ -15379,7 +15809,7 @@ ${THEME_SELECTOR}{
 .lm-settings-dialog .lm-slider input{min-width:0}
 #lm-panel .lm-top-tools{flex-shrink:0;margin:0;padding:10px 14px;justify-content:flex-end}
 #lm-panel .lm-check,.lm-settings-dialog .lm-check{display:flex;align-items:center;gap:6px;margin:6px 0}
-/* ─── v3.8 桌面歌词设置 / 音乐 ─── */
+/* ─── v3.8 桌面歌词设置 ─── */
 .cw-sheet .dl-h{font-weight:700}
 .dl-settings-dialog .dl-h{margin-top:8px;padding-top:10px;border-top:var(--cw-line)}
 .dl-settings-dialog .dl-preview{position:sticky;top:0;z-index:2;display:grid;place-items:center;min-height:130px;max-height:260px;padding:16px 12px;margin-bottom:8px;overflow:hidden;background:linear-gradient(135deg,#2f3440,#6d6a78 60%,#a89aa8);border:var(--cw-line)}
@@ -15461,6 +15891,13 @@ ${THEME_SELECTOR}{
 #tl-panel .tl-hint{margin:0 0 10px}
 #tl-panel .tl-allow{margin:0 0 10px;display:flex;align-items:center;gap:6px}
 #tl-panel .cw-list-name{flex:1;min-width:0;text-align:left;justify-content:flex-start;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+#tl-panel .tl-entry-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;align-items:center;gap:6px}
+#tl-panel .tl-entry-head .cw-list-name{width:100%;max-width:none;min-width:0;white-space:normal;overflow-wrap:anywhere;text-overflow:clip;overflow:visible;line-height:1.5}
+#tl-panel .tl-entry-group{display:flex;align-items:center;gap:8px;padding:0 10px 8px;margin:0;min-width:0;max-width:100%;box-sizing:border-box}
+#tl-panel .tl-entry-group>span:first-child{flex:none;font-size:12px;opacity:.75}
+#tl-panel .tl-entry-group select{flex:1 1 0;width:0!important;min-width:0!important;max-width:none;box-sizing:border-box}
+#tl-panel .tl-entry-group .tl-tag{max-width:35%}
+@media(max-width:540px){#tl-panel .tl-entry-head .cw-list-name{grid-column:2/-1}#tl-panel .tl-entry-head .tl-power{grid-column:2;justify-self:start}}
 #tl-panel .tl-item.is-off .cw-list-name,#tl-panel .tl-item.is-off .tl-plugin-name{opacity:.6}
 #tl-panel .tl-power{flex:0 0 auto;min-height:28px;padding:3px 9px;font-size:calc(12px * var(--cw-fs, 1))}
 #tl-panel .tl-power.is-on{background:var(--cw-accent-soft);box-shadow:inset 0 0 0 1px var(--cw-border)}
