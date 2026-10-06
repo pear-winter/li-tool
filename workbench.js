@@ -1,5 +1,5 @@
 /**
- * 🍐 梨梨工作台 v3.9.4 · 公开版
+ * 🍐 梨梨工作台 v3.9.6 · 公开版
  * 合并：预设工作台 v1.1 / 世界书工作台 v2.7 / 聊天工作台 v3.4.0（聊天档案馆 + 回复分支）
  * 适配目标：SillyTavern 1.19.0 / 酒馆助手 4.9.3
  * 一个入口、一个面板、顶部四页切换；入口、悬浮图与美化统一共享。
@@ -12815,17 +12815,83 @@ function createWorkbenchVoice({ window: W, node, button }) {
     const open = new Set();
     const ui = {};
 
-    let activeGroup = '*';
+    let activeGroup = '*', groupSheet = null;
+    const expandedGroups = new Set();
     function groupData() { cfg.toolGroups = object(cfg.toolGroups); const key = JSON.stringify([kind, scope, scope === 'global' ? '' : target]); return cfg.toolGroups[key] ||= { names: [], assignments: {}, collapsed: [] }; }
-    function itemGroup(item) { return groupData().assignments[item.id || nameOf(item)] || ''; }
+    function itemGroup(item) { const data = groupData(), name = data.assignments[item.id || nameOf(item)] || ''; return data.names.includes(name) ? name : ''; }
     function assignGroup(list, name) { const data = groupData(); list.forEach(item => { const key = item.id || nameOf(item); if (name) data.assignments[key] = name; else delete data.assignments[key]; }); saveCfg(); paint(); }
-    function groupControls(put) {
-      const data = groupData(), select = node('select'); select.setAttribute('aria-label', '条目分组');
-      for (const [value, label] of [['*','全部分组'],['','未分组'],...data.names.map(n=>[n,n])]) { const o=node('option','',label);o.value=value;select.append(o); } select.value=activeGroup;
-      select.onchange=()=>{activeGroup=select.value;paintList();};
-      const targetGroup=node('select');targetGroup.setAttribute('aria-label','将选中条目加入分组');targetGroup.append(node('option','','将选中移到…'));targetGroup.firstChild.value='__none';
-      for(const name of ['',...data.names]){const o=node('option','',name||'未分组');o.value=name;targetGroup.append(o);}targetGroup.onchange=()=>{const chosen=items().filter(item=>selected.has(item));if(!chosen.length){notice('请先选中条目。');targetGroup.value='__none';return;}assignGroup(chosen,targetGroup.value);};
-      put(select,targetGroup,button('新建分组',async()=>{const name=(await dialog('分组名称','prompt','新分组'))?.trim();if(!name)return;if(data.names.includes(name))return notice('已有同名分组。');data.names.push(name);activeGroup=name;saveCfg();paint();}),button('分组改名',async()=>{if(!activeGroup||activeGroup==='*')return notice('先选择一个分组。');const old=activeGroup,name=(await dialog('新分组名称','prompt',old))?.trim();if(!name||name===old)return;if(data.names.includes(name))return notice('已有同名分组。');data.names=data.names.map(n=>n===old?name:n);for(const key in data.assignments)if(data.assignments[key]===old)data.assignments[key]=name;activeGroup=name;saveCfg();paint();}),button('删除分组',()=>{if(!activeGroup||activeGroup==='*')return notice('先选择一个分组。');const old=activeGroup;data.names=data.names.filter(n=>n!==old);for(const key in data.assignments)if(data.assignments[key]===old)delete data.assignments[key];activeGroup='*';saveCfg();paint();notice('分组已删除，条目移到未分组。');}));
+    function manageGroups() {
+      if (!work) return notice('请先选择并读取正则或脚本。');
+      groupSheet?.close();
+      const sheet = openSheet('管理分组 · ' + where()); groupSheet = sheet;
+      sheet.d.classList.add('tl-group-manager');
+      let source = '*', destination = '', searchText = '';
+      const picked = new Set(items().filter(item => selected.has(item)));
+      const data = groupData();
+      const chosen = () => items().filter(item => picked.has(item));
+      const visible = () => items().filter(item => (source === '*' || itemGroup(item) === source) && nameOf(item).toLowerCase().includes(searchText.toLowerCase()));
+      sheet.onClose(() => { if (groupSheet === sheet) groupSheet = null; paint(); });
+      function selector(options, value, label, change) {
+        const el = node('select'); el.setAttribute('aria-label', label);
+        for (const [v, text] of options) { const o = node('option', '', text); o.value = v; el.append(o); }
+        el.value = value; el.onchange = () => change(el.value); return el;
+      }
+      function render() {
+        sheet.tools.replaceChildren(); sheet.body.replaceChildren(); sheet.foot.replaceChildren();
+        const groups = [['', '默认分组'], ...data.names.map(n => [n, n])];
+        const filter = selector([['*', '全部条目'], ...groups], source, '查看分组', value => { source = value; render(); });
+        const targetSelect = selector(groups, destination, '移入目标分组', value => { destination = value; });
+        const search = input('搜索条目名称…', searchText);
+        const list = node('div', 'tl-manager-list'), status = node('span', 'cw-note');
+        function paintRows() {
+          list.replaceChildren();
+          const rows = visible();
+          status.textContent = '显示 ' + rows.length + ' 条 · 已选 ' + chosen().length + ' 条';
+          if (!rows.length) list.append(node('div', 'cw-empty', '这里还没有条目'));
+          for (const item of rows) {
+            const row = node('label', 'tl-manager-row');
+            const sw = heartSwitch(picked.has(item), '选择「' + nameOf(item) + '」');
+            sw.onchange = () => { sw.checked ? picked.add(item) : picked.delete(item); status.textContent = '显示 ' + visible().length + ' 条 · 已选 ' + chosen().length + ' 条'; };
+            row.append(sw, node('span', 'tl-manager-name', nameOf(item)), node('span', 'cw-note', itemGroup(item) || '默认分组')); list.append(row);
+          }
+        }
+        search.oninput = () => { searchText = search.value; paintRows(); };
+        const requireChosen = () => { const rows = chosen(); if (!rows.length) notice('请先选择条目。'); return rows; };
+        sheet.tools.append(filter, button('新增分组', async () => {
+          const name = (await dialog('分组名称', 'prompt', '新分组'))?.trim(); if (!name) return;
+          if (['默认分组', '*'].includes(name) || data.names.includes(name)) return notice('请换一个分组名称。');
+          data.names.push(name); source = destination = name; saveCfg(); paint(); render();
+        }), button('分组改名', async () => {
+          if (!source || source === '*') return notice('请先选择一个自定义分组。');
+          const old = source, name = (await dialog('新分组名称', 'prompt', old))?.trim(); if (!name || name === old) return;
+          if (['默认分组', '*'].includes(name) || data.names.includes(name)) return notice('请换一个分组名称。');
+          data.names = data.names.map(n => n === old ? name : n);
+          for (const key in data.assignments) if (data.assignments[key] === old) data.assignments[key] = name;
+          if (expandedGroups.delete(old)) expandedGroups.add(name);
+          source = name; if (destination === old) destination = name; saveCfg(); paint(); render();
+        }), button('删除分组', async () => {
+          if (!source || source === '*') return notice('请先选择一个自定义分组。');
+          const old = source; if (!await ask('删除分组「' + old + '」？其中的条目会移回默认分组。')) return;
+          data.names = data.names.filter(n => n !== old);
+          for (const key in data.assignments) if (data.assignments[key] === old) delete data.assignments[key];
+          expandedGroups.delete(old); source = ''; if (destination === old) destination = ''; saveCfg(); paint(); render();
+        }), search);
+        sheet.body.append(actions(button('全选当前列表', () => { visible().forEach(item => picked.add(item)); paintRows(); }), button('取消选择', () => { picked.clear(); paintRows(); }), status),
+          actions(node('span', 'cw-note', '目标分组'), targetSelect, button('移入选中条目', () => { const rows = requireChosen(); if (!rows.length) return; assignGroup(rows, destination); render(); }),
+          button('移出选中条目', () => { const rows = requireChosen(); if (!rows.length) return; assignGroup(rows, ''); render(); })),
+          actions(button('在当前组新建条目', async () => {
+            if (source === '*') return notice('请先选择一个分组（也可以选默认分组）。');
+            const title = await dialog('新' + (kind === 'regex' ? '正则' : '脚本') + '的名称：', 'prompt', kind === 'regex' ? '新正则' : '新脚本'); if (title === null) return;
+            const item = kind === 'regex' ? newRegex(title.trim()) : newScript(title.trim()); addItems([item]); assignGroup([item], source); touch(); render();
+          }), button('删除选中条目', async () => {
+            const rows = requireChosen(); if (!rows.length) return;
+            if (!await ask('删除选中的 ' + rows.length + ' 条内容？保存修改后才会真正写入酒馆。')) return;
+            rows.forEach(item => { removeItem(item); picked.delete(item); }); touch(); paint(); render();
+          }, 'cw-danger')), node('p', 'cw-note', '分组调整自动保存。新增、删除条目后，请保存修改。'), list);
+        sheet.foot.append(button('保存修改', async () => { await saveWork(); render(); }, 'cw-primary'), button('完成', () => sheet.close()));
+        paintRows();
+      }
+      render();
     }
     function orderedPlugins() { const order=Array.isArray(cfg.pluginOrder)?cfg.pluginOrder:[];return [...plugins].sort((a,b)=>{const ai=order.indexOf(a.name),bi=order.indexOf(b.name);return (ai<0?order.length:ai)-(bi<0?order.length:bi);}); }
     function movePlugin(plugin,delta) { const names=orderedPlugins().map(p=>p.name),from=names.indexOf(plugin.name),to=from+delta;if(to<0||to>=names.length)return;[names[from],names[to]]=[names[to],names[from]];cfg.pluginOrder=names;saveCfg();paintList(); }
@@ -12960,6 +13026,7 @@ function createWorkbenchVoice({ window: W, node, button }) {
     /* ---------- 读取 / 保存 ---------- */
     async function loadWork() {
       const id = ++loadId;
+      groupSheet?.close(); expandedGroups.clear(); activeGroup = '*';
       work = null; loadError = ''; dirty = false; selected.clear(); open.clear();
       paint();
       try {
@@ -13459,7 +13526,7 @@ function createWorkbenchVoice({ window: W, node, button }) {
       }
       const chosen = () => items().filter(i => selected.has(i));
       ui.save = button('保存修改', () => saveWork(), 'cw-primary');
-      groupControls(put);
+      put(button('管理分组', manageGroups));
       put(search, ui.save,
         button('放弃修改', async () => { if (dirty && !await ask('放弃「' + where() + '」还没保存的修改？')) return; await loadWork(); }),
         button('刷新', async () => { if (!await confirmLeave()) return; await loadWork(); }),
@@ -13468,7 +13535,7 @@ function createWorkbenchVoice({ window: W, node, button }) {
           const title = await dialog('新' + (kind === 'regex' ? '正则' : '脚本') + '的名称：', 'prompt', kind === 'regex' ? '新正则' : '新脚本');
           if (title === null) return;
           const item = kind === 'regex' ? newRegex(title.trim()) : newScript(title.trim());
-          addItems([item]); open.add(item); touch(); paintList();
+          addItems([item]); expandedGroups.add(''); open.add(item); touch(); paintList();
           W.requestAnimationFrame(() => ui.list.lastElementChild?.scrollIntoView({ block: 'nearest' }));
         }),
         button('全选', () => { items().filter(matchItem).forEach(i => selected.add(i)); paintList(); paintStatus(); }),
@@ -13536,8 +13603,23 @@ function createWorkbenchVoice({ window: W, node, button }) {
       }
       const all = items();
       const shown = all.filter(matchItem);
-      if (!shown.length) { list.append(node('div', 'cw-empty', all.length ? '没有匹配的条目' : '这里还没有' + (kind === 'regex' ? '正则' : '脚本') + '，点「＋ 新增」或「导入」。')); return; }
-      if (activeGroup !== '*') shown.forEach(item=>list.append(itemCard(item))); else for (const group of [...groupData().names,'']) { const members=shown.filter(item=>itemGroup(item)===group);if(!members.length)continue;const box=node('details','tl-group'),summary=node('summary','', (group||'未分组')+' · '+members.length);box.open=!groupData().collapsed.includes(group);box.append(summary);members.forEach(item=>box.append(itemCard(item)));const collapseData=groupData();box.ontoggle=()=>{if(!box.isConnected)return;const data=collapseData;data.collapsed=data.collapsed.filter(n=>n!==group);if(!box.open)data.collapsed.push(group);saveCfg();};list.append(box); }
+      if (!shown.length && query) { list.append(node('div', 'cw-empty', all.length ? '没有匹配的条目' : '这里还没有' + (kind === 'regex' ? '正则' : '脚本') + '，点「＋ 新增」或「导入」。')); return; }
+      for (const group of ['', ...groupData().names]) {
+        const members = shown.filter(item => itemGroup(item) === group);
+        if (!members.length && query) continue;
+        const box = node('details', 'tl-group'), summary = node('summary', '', (group || '默认分组') + ' · ' + members.length);
+        const contents = node('div', 'tl-group-items');
+        box.open = !!query || expandedGroups.has(group);
+        const fill = () => { contents.replaceChildren(); members.forEach(item => contents.append(itemCard(item))); };
+        if (box.open) fill();
+        box.append(summary, contents);
+        box.ontoggle = () => {
+          if (!box.isConnected) return;
+          if (box.open) { expandedGroups.add(group); if (!contents.childElementCount) fill(); }
+          else { expandedGroups.delete(group); contents.replaceChildren(); }
+        };
+        list.append(box);
+      }
       list.scrollTop = top;
     }
 
@@ -13552,12 +13634,26 @@ function createWorkbenchVoice({ window: W, node, button }) {
       const power = button(isOn(item) ? '已启用' : '已停用', () => { setOn(item, !isOn(item)); touch(); paintList(); }, 'tl-power' + (isOn(item) ? ' is-on' : ''));
       power.title = '点一下切换启用 / 停用';
       name.title=nameOf(item);head.append(pick, name);
-      const groupSelect=node('select');groupSelect.setAttribute('aria-label','条目所属分组');for(const value of ['',...groupData().names]){const o=node('option','',value||'未分组');o.value=value;groupSelect.append(o);}groupSelect.value=itemGroup(item);groupSelect.onchange=()=>assignGroup([item],groupSelect.value);const groupRow=node('label','tl-entry-group');groupRow.append(node('span','','分组'),groupSelect);
-      if (folder) groupRow.append(node('span', 'tl-tag', '📁 ' + folder));
+      if (folder) name.title += ' · 文件夹：' + folder;
       head.append(power, button('▲', () => move(item, -1), 'tl-mini'), button('▼', () => move(item, 1), 'tl-mini'));
-      card.append(head,groupRow);
+      card.append(head);
       if (!expanded) return card;
       const body = node('div', 'cw-list-body');
+      const groupRow = node('label', 'tl-entry-group');
+      const groupSelect = node('select');
+      groupSelect.setAttribute('aria-label', '条目所属分组');
+      for (const value of ['', ...groupData().names]) {
+        const option = node('option', '', value || '默认分组');
+        option.value = value; groupSelect.append(option);
+      }
+      groupSelect.value = itemGroup(item);
+      groupSelect.onchange = () => {
+        expandedGroups.add(groupSelect.value);
+        assignGroup([item], groupSelect.value);
+      };
+      groupRow.append(node('span', '', '选择分组'), groupSelect);
+      body.append(groupRow);
+
       const areaField = (key, label, rows, get = () => String(item[key] ?? ''), set = v => { item[key] = v; }) => {
         const area = node('textarea');
         area.rows = rows; area.spellcheck = false; area.value = get();
@@ -13682,7 +13778,7 @@ function createWorkbenchVoice({ window: W, node, button }) {
       ui.list = node('div', 'tl-list');
       const footer = node('div', 'cw-footer');
       ui.status = node('span');
-      footer.append(ui.status, DOC.createTextNode(' · 🧰 工具 · 梨梨工作台 v3.9.4'));
+      footer.append(ui.status, DOC.createTextNode(' · 🧰 工具 · 梨梨工作台 v3.9.6'));
       panel.append(ui.seg, ui.bar, ui.list, footer);
       panel.addEventListener('keydown', event => {
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); void saveWork(); }
@@ -13692,6 +13788,7 @@ function createWorkbenchVoice({ window: W, node, button }) {
       void loadWork();
     }
     function close() {
+      groupSheet?.close(); expandedGroups.clear(); activeGroup = '*';
       loadId++;
       panel?.remove();
       panel = null;
@@ -15893,10 +15990,18 @@ function createWorkbenchVoice({ window: W, node, button }) {
 #tl-panel .cw-list-name{flex:1;min-width:0;text-align:left;justify-content:flex-start;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
 #tl-panel .tl-entry-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;align-items:center;gap:6px}
 #tl-panel .tl-entry-head .cw-list-name{width:100%;max-width:none;min-width:0;white-space:normal;overflow-wrap:anywhere;text-overflow:clip;overflow:visible;line-height:1.5}
-#tl-panel .tl-entry-group{display:flex;align-items:center;gap:8px;padding:0 10px 8px;margin:0;min-width:0;max-width:100%;box-sizing:border-box}
-#tl-panel .tl-entry-group>span:first-child{flex:none;font-size:12px;opacity:.75}
-#tl-panel .tl-entry-group select{flex:1 1 0;width:0!important;min-width:0!important;max-width:none;box-sizing:border-box}
-#tl-panel .tl-entry-group .tl-tag{max-width:35%}
+#tl-panel .tl-entry-group{display:flex;align-items:center;gap:8px;margin:0 0 10px;min-width:0}
+#tl-panel .tl-entry-group>span{flex:none;font-size:12px;opacity:.75}
+#tl-panel .tl-entry-group select{flex:1;min-width:0!important;width:0!important;max-width:none;box-sizing:border-box}
+#tl-panel .tl-group{border:1px solid var(--cw-border);border-radius:12px;margin:0 0 10px;padding:0;overflow:hidden}
+#tl-panel .tl-group>summary{padding:12px 14px;cursor:pointer;font-weight:600;background:var(--cw-accent-soft)}
+#tl-panel .tl-group-items{padding:8px}
+.tl-group-manager .tl-manager-list{display:flex;flex-direction:column;gap:6px}
+.tl-group-manager .tl-manager-row{display:flex;align-items:center;gap:10px;border:1px solid var(--cw-border);border-radius:10px;padding:10px;cursor:pointer}
+.tl-group-manager .tl-manager-name{flex:1;min-width:0;overflow-wrap:anywhere}
+.tl-group-manager .tl-manager-row>.cw-note{flex:0 1 28%;overflow-wrap:anywhere}
+.tl-group-manager :is(.cw-sheet-tools,.cw-actions){flex-wrap:wrap}
+.tl-group-manager select{max-width:100%;min-width:0}
 @media(max-width:540px){#tl-panel .tl-entry-head .cw-list-name{grid-column:2/-1}#tl-panel .tl-entry-head .tl-power{grid-column:2;justify-self:start}}
 #tl-panel .tl-item.is-off .cw-list-name,#tl-panel .tl-item.is-off .tl-plugin-name{opacity:.6}
 #tl-panel .tl-power{flex:0 0 auto;min-height:28px;padding:3px 9px;font-size:calc(12px * var(--cw-fs, 1))}
@@ -15971,3 +16076,4 @@ function createWorkbenchVoice({ window: W, node, button }) {
   W[OWNER] = { dispose, open: openHub };
   window.addEventListener('pagehide', dispose, { once: true });
 }
+
